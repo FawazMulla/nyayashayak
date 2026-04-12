@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NUC Legal AI – Upload Case</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <style>
+    body { background: #f0f4f8; font-family: 'Segoe UI', sans-serif; }
+    .navbar-brand span { color: #3b82f6; }
+    .hero-badge { background: #dbeafe; color: #1d4ed8; font-size: .75rem; padding: 4px 14px; border-radius: 999px; display: inline-block; margin-bottom: 1rem; }
+    .card { border: none; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,.08); }
+    .tab-btn { border: none; background: none; padding: .5rem 1.25rem; border-radius: 8px; font-weight: 500; color: #64748b; cursor: pointer; transition: all .2s; }
+    .tab-btn.active { background: #3b82f6; color: white; }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+    .drop-zone {
+      border: 2px dashed #93c5fd; border-radius: 12px; padding: 2.5rem;
+      text-align: center; cursor: pointer; transition: background .2s, border-color .2s; background: #f8faff;
+    }
+    .drop-zone.dragover { background: #dbeafe; border-color: #3b82f6; }
+    .drop-zone i { font-size: 2.5rem; color: #3b82f6; }
+    .btn-analyze { background: linear-gradient(135deg, #3b82f6, #1d4ed8); border: none; border-radius: 10px; padding: .75rem 2rem; font-size: 1rem; }
+    .btn-analyze:hover { opacity: .9; }
+    .section-divider { font-size: .7rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #94a3b8; margin: 1.5rem 0 .75rem; display: flex; align-items: center; gap: .75rem; }
+    .section-divider::before, .section-divider::after { content: ''; flex: 1; height: 1px; background: #e2e8f0; }
+    .upcoming-badge { background: #fef3c7; color: #92400e; font-size: .7rem; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+    .feature-pill { background: #f1f5f9; border-radius: 8px; padding: 6px 14px; font-size: .8rem; color: #475569; display: inline-flex; align-items: center; gap: 6px; }
+    #file-name { font-size: .85rem; color: #64748b; margin-top: .5rem; }
+    .spinner-overlay { display: none; position: fixed; inset: 0; background: rgba(255,255,255,.8); z-index: 9999; align-items: center; justify-content: center; flex-direction: column; gap: 1rem; }
+    .spinner-overlay.active { display: flex; }
+    .form-label { font-size: .85rem; font-weight: 600; color: #475569; }
+    .form-control, .form-select { border-radius: 10px; border-color: #e2e8f0; font-size: .9rem; }
+    .form-control:focus, .form-select:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.15); }
+    .ai-badge { background: #ede9fe; color: #6d28d9; font-size: .7rem; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar navbar-light bg-white shadow-sm px-4 py-3">
+  <a class="navbar-brand fw-bold fs-5" href="/">NUC <span>Legal AI</span></a>
+  <div class="d-flex align-items-center gap-2">
+    <span class="badge bg-primary-subtle text-primary rounded-pill px-3">ML-Powered</span>
+    <span class="ai-badge"><i class="bi bi-stars me-1"></i>Cohere AI</span>
+  </div>
+</nav>
+
+<div class="spinner-overlay" id="spinner">
+  <div class="spinner-border text-primary" style="width:3rem;height:3rem;" role="status"></div>
+  <p class="text-secondary fw-medium mb-0">Running ML + AI correction pipeline…</p>
+  <p class="text-secondary small">Extractor → Sanity Check → Cohere (if needed)</p>
+</div>
+
+<div class="container py-5" style="max-width:720px;">
+
+  <div class="text-center mb-4">
+    <div class="hero-badge"><i class="bi bi-cpu me-1"></i>Machine Learning Legal Assistant</div>
+    <h1 class="fw-bold fs-2 mb-2">NUC Legal AI</h1>
+    <p class="text-secondary">Analyze legal cases using ML models trained on Supreme Court judgments.<br>
+    <small class="text-muted">Hybrid pipeline: Rule-based extraction + Cohere AI correction</small></p>
+  </div>
+
+  {% if error %}
+  <div class="alert alert-danger alert-dismissible fade show rounded-3" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endif %}
+
+  <div class="card p-4">
+
+    <!-- Tabs -->
+    <div class="d-flex gap-2 mb-4 p-1 bg-light rounded-3" style="width:fit-content;">
+      <button class="tab-btn active" onclick="switchTab('pdf', this)">
+        <i class="bi bi-file-earmark-pdf me-1"></i>Upload PDF
+      </button>
+      <button class="tab-btn" onclick="switchTab('text', this)">
+        <i class="bi bi-textarea-t me-1"></i>Paste Text
+      </button>
+    </div>
+
+    <form method="post" action="/analyze/" enctype="multipart/form-data" id="upload-form">
+      {% csrf_token %}
+
+      <!-- PDF Tab -->
+      <div class="tab-pane active" id="tab-pdf">
+        <div class="drop-zone mb-2" id="drop-zone" onclick="document.getElementById('pdf_file').click()">
+          <i class="bi bi-file-earmark-pdf mb-2 d-block"></i>
+          <p class="mb-1 fw-semibold text-dark">Drag & drop a PDF here</p>
+          <p class="text-secondary small mb-0">or click to browse</p>
+          <input type="file" name="pdf_file" id="pdf_file" accept=".pdf" class="d-none"/>
+        </div>
+        <div id="file-name" class="text-center mb-3"></div>
+      </div>
+
+      <!-- Text Tab -->
+      <div class="tab-pane" id="tab-text">
+        <label class="form-label">Paste Judgment Text</label>
+        <textarea name="text_input" id="text_input" class="form-control mb-3" rows="8"
+          placeholder="Paste the full judgment text here (minimum 150 words for quality extraction)…"
+          style="resize:vertical;"></textarea>
+      </div>
+
+      <!-- ── Upcoming Features Form ─────────────────────────────────────── -->
+      <div class="section-divider">Upcoming Features</div>
+
+      <div class="row g-3 mb-4">
+
+        <!-- Chatbot query -->
+        <div class="col-12">
+          <label class="form-label d-flex align-items-center gap-2">
+            <i class="bi bi-chat-dots text-primary"></i> Legal Chatbot Query
+            <span class="upcoming-badge">Coming Soon</span>
+          </label>
+          <input type="text" name="chatbot_query" class="form-control" disabled
+            placeholder="Ask a question about this case… (e.g. What sections were cited?)"/>
+          <div class="form-text">AI-powered Q&A on the analyzed judgment using Cohere chat.</div>
+        </div>
+
+        <!-- Similarity search -->
+        <div class="col-md-6">
+          <label class="form-label d-flex align-items-center gap-2">
+            <i class="bi bi-diagram-2 text-success"></i> Similarity Search
+            <span class="upcoming-badge">Coming Soon</span>
+          </label>
+          <select name="similarity_method" class="form-select" disabled>
+            <option value="tfidf">TF-IDF Cosine Similarity</option>
+            <option value="bert">BERT Embeddings</option>
+            <option value="cohere">Cohere Embeddings</option>
+          </select>
+          <div class="form-text">Find similar cases from the dataset.</div>
+        </div>
+
+        <!-- Top-N similar cases -->
+        <div class="col-md-6">
+          <label class="form-label d-flex align-items-center gap-2">
+            <i class="bi bi-list-ol text-warning"></i> Top-N Similar Cases
+            <span class="upcoming-badge">Coming Soon</span>
+          </label>
+          <select name="top_n" class="form-select" disabled>
+            <option value="3">Top 3</option>
+            <option value="5" selected>Top 5</option>
+            <option value="10">Top 10</option>
+          </select>
+          <div class="form-text">Number of similar cases to retrieve.</div>
+        </div>
+
+        <!-- Outcome prediction model -->
+        <div class="col-md-6">
+          <label class="form-label d-flex align-items-center gap-2">
+            <i class="bi bi-bar-chart text-danger"></i> ML Model
+            <span class="upcoming-badge">Coming Soon</span>
+          </label>
+          <select name="ml_model" class="form-select" disabled>
+            <option value="logreg">Logistic Regression</option>
+            <option value="rf">Random Forest</option>
+            <option value="svm">SVM</option>
+            <option value="bert">Fine-tuned BERT</option>
+          </select>
+          <div class="form-text">Model used for outcome prediction.</div>
+        </div>
+
+        <!-- Notes / context -->
+        <div class="col-md-6">
+          <label class="form-label d-flex align-items-center gap-2">
+            <i class="bi bi-sticky text-secondary"></i> Case Notes
+            <span class="upcoming-badge">Coming Soon</span>
+          </label>
+          <input type="text" name="case_notes" class="form-control" disabled
+            placeholder="Optional notes for this case…"/>
+          <div class="form-text">Saved with the dataset record.</div>
+        </div>
+
+      </div>
+      <!-- ── End Upcoming Features ──────────────────────────────────────── -->
+
+      <button type="submit" class="btn btn-analyze btn-primary w-100 text-white fw-semibold" id="submit-btn">
+        <i class="bi bi-lightning-charge-fill me-2"></i>Analyze Case
+      </button>
+    </form>
+  </div>
+
+  <div class="d-flex flex-wrap gap-2 justify-content-center mt-4">
+    <span class="feature-pill"><i class="bi bi-diagram-3 text-primary"></i>Outcome Classification</span>
+    <span class="feature-pill"><i class="bi bi-tags text-success"></i>Category Detection</span>
+    <span class="feature-pill"><i class="bi bi-shield-check text-warning"></i>Section Extraction</span>
+    <span class="feature-pill"><i class="bi bi-stars text-purple" style="color:#7c3aed"></i>AI Correction</span>
+    <span class="feature-pill"><i class="bi bi-bar-chart text-danger"></i>ML Confidence</span>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  function switchTab(name, btn) {
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  const dropZone  = document.getElementById('drop-zone');
+  const fileInput = document.getElementById('pdf_file');
+  const fileNameEl = document.getElementById('file-name');
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) fileNameEl.textContent = '📎 ' + fileInput.files[0].name;
+  });
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault(); dropZone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      const dt = new DataTransfer(); dt.items.add(file);
+      fileInput.files = dt.files;
+      fileNameEl.textContent = '📎 ' + file.name;
+    }
+  });
+
+  document.getElementById('upload-form').addEventListener('submit', function(e) {
+    const file      = fileInput.files[0];
+    const textVal   = document.getElementById('text_input').value.trim();
+    const activeTab = document.querySelector('.tab-pane.active').id;
+
+    // Client-side guard — must have something
+    if (activeTab === 'tab-pdf' && !file) {
+      e.preventDefault();
+      alert('Please select a PDF file before analyzing.');
+      return;
+    }
+    if (activeTab === 'tab-text' && textVal.split(/\s+/).filter(Boolean).length < 20) {
+      e.preventDefault();
+      alert('Please paste more text (at least a few paragraphs of judgment text).');
+      return;
+    }
+
+    document.getElementById('spinner').classList.add('active');
+  });
+
+  // Hide spinner on page show (covers back-button navigation & error reloads)
+  window.addEventListener('pageshow', () => {
+    document.getElementById('spinner').classList.remove('active');
+  });
+
+  // Auto-scroll to error if present
+  const errEl = document.querySelector('.alert-danger');
+  if (errEl) errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+</script>
+</body>
+</html>

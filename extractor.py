@@ -265,72 +265,91 @@ def extract_case_id(text: str) -> str:
 def extract_sections(text: str) -> str:
     """
     Extract statutory sections tied to a known act.
-
-    Strategy:
-    1. For each known act, find all 'Section(s) NNN ... <act>' mentions
-       where the act name appears within 120 chars after the section number.
-    2. Also resolve short inline forms: 'Section 302 IPC', 'S.138 NI Act'
-    3. Also resolve 'Section NNN thereof' / 'Section NNN of the Act' by
-       looking at the nearest act name mentioned in the surrounding 400 chars.
+    Handles: 'Section 302 IPC', 'sub-section (1) of Section 37 FSS Act',
+             'Section 2(y) of the RPwD Act', 'Section 198(4) of the UP ZA Act',
+             'Section NNN thereof', 'Section NNN of the Act'
+    Returns normalized format: "302 IPC, 138 NI Act"
     """
     ACTS = [
-        (r"Indian\s+Penal\s+Code|(?<!\w)I\.?P\.?C\.?(?!\w)",           "IPC"),
-        (r"Code\s+of\s+Criminal\s+Procedure|(?<!\w)Cr\.?P\.?C\.?(?!\w)","CrPC"),
-        (r"Code\s+of\s+Civil\s+Procedure|(?<!\w)C\.?P\.?C\.?(?!\w)",   "CPC"),
-        (r"NDPS\s+Act|Narcotic\s+Drugs\s+and\s+Psychotropic",           "NDPS Act"),
-        (r"Prevention\s+of\s+Money.Laundering|(?<!\w)PMLA(?!\w)",       "PMLA"),
-        (r"Prevention\s+of\s+Corruption\s+Act",                         "PC Act"),
-        (r"Income.Tax\s+Act|(?<!\w)I\.T\.\s+Act(?!\w)",                 "IT Act"),
-        (r"Companies\s+Act",                                             "Companies Act"),
-        (r"Consumer\s+Protection\s+Act",                                 "Consumer Protection Act"),
-        (r"Negotiable\s+Instruments\s+Act|(?<!\w)N\.I\.\s+Act(?!\w)",   "NI Act"),
-        (r"(?<!\w)Evidence\s+Act(?!\w)",                                 "Evidence Act"),
-        (r"Motor\s+Vehicles\s+Act",                                      "MV Act"),
-        (r"Arbitration\s+and\s+Conciliation\s+Act|Arbitration\s+Act",   "Arbitration Act"),
-        (r"Insolvency\s+and\s+Bankruptcy\s+Code|(?<!\w)IBC(?!\w)",      "IBC"),
-        (r"(?<!\w)Customs\s+Act(?!\w)",                                  "Customs Act"),
-        (r"Central\s+Excise\s+Act",                                      "Central Excise Act"),
-        (r"Juvenile\s+Justice\s+Act|(?<!\w)J\.J\.\s+Act(?!\w)",         "JJ Act"),
-        (r"Protection\s+of\s+Children\s+from\s+Sexual|(?<!\w)POCSO(?!\w)", "POCSO"),
-        (r"Specific\s+Relief\s+Act",                                     "Specific Relief Act"),
-        (r"Transfer\s+of\s+Property\s+Act",                              "TP Act"),
-        (r"Hindu\s+Marriage\s+Act",                                      "Hindu Marriage Act"),
-        (r"Hindu\s+Succession\s+Act",                                    "Hindu Succession Act"),
-        (r"Forest\s+Conservation\s+Act",                                 "Forest Conservation Act"),
+        (r"Indian\s+Penal\s+Code|(?<!\w)I\.?P\.?C\.?(?!\w)",                    "IPC"),
+        (r"Bharatiya\s+Nyaya\s+Sanhita|(?<!\w)B\.?N\.?S\.?(?!\w)",              "BNS"),
+        (r"Code\s+of\s+Criminal\s+Procedure|(?<!\w)Cr\.?P\.?C\.?(?!\w)",        "CrPC"),
+        (r"Bharatiya\s+Nagarik\s+Suraksha\s+Sanhita|(?<!\w)B\.?N\.?S\.?S\.?(?!\w)", "BNSS"),
+        (r"Code\s+of\s+Civil\s+Procedure|(?<!\w)C\.?P\.?C\.?(?!\w)",            "CPC"),
+        (r"NDPS\s+Act|Narcotic\s+Drugs\s+and\s+Psychotropic",                   "NDPS Act"),
+        (r"Prevention\s+of\s+Money.Laundering|(?<!\w)PMLA(?!\w)",               "PMLA"),
+        (r"Prevention\s+of\s+Corruption\s+Act",                                  "PC Act"),
+        (r"Income.Tax\s+Act|(?<!\w)I\.T\.\s+Act(?!\w)",                         "IT Act"),
+        (r"Companies\s+Act",                                                      "Companies Act"),
+        (r"Consumer\s+Protection\s+Act",                                          "Consumer Protection Act"),
+        (r"Negotiable\s+Instruments\s+Act|(?<!\w)N\.I\.\s+Act(?!\w)",           "NI Act"),
+        (r"(?<!\w)Evidence\s+Act(?!\w)",                                          "Evidence Act"),
+        (r"Motor\s+Vehicles\s+Act",                                               "MV Act"),
+        (r"Arbitration\s+and\s+Conciliation\s+Act|Arbitration\s+Act",           "Arbitration Act"),
+        (r"Insolvency\s+and\s+Bankruptcy\s+Code|(?<!\w)IBC(?!\w)",              "IBC"),
+        (r"(?<!\w)Customs\s+Act(?!\w)",                                           "Customs Act"),
+        (r"Central\s+Excise\s+Act",                                               "Central Excise Act"),
+        (r"Juvenile\s+Justice\s+Act|(?<!\w)J\.J\.\s+Act(?!\w)",                 "JJ Act"),
+        (r"Protection\s+of\s+Children\s+from\s+Sexual|(?<!\w)POCSO(?!\w)",      "POCSO"),
+        (r"Specific\s+Relief\s+Act",                                              "Specific Relief Act"),
+        (r"Transfer\s+of\s+Property\s+Act",                                       "TP Act"),
+        (r"Hindu\s+Marriage\s+Act",                                               "Hindu Marriage Act"),
+        (r"Hindu\s+Succession\s+Act",                                             "Hindu Succession Act"),
+        (r"Forest\s+Conservation\s+Act",                                          "Forest Conservation Act"),
         (r"Wild\s+Life\s+\(?Protection\s+\)?Act|Wildlife\s+\(?Protection\s+\)?Act", "Wildlife Act"),
-        (r"Factories\s+Act",                                             "Factories Act"),
-        (r"Representation\s+of\s+the\s+People\s+Act",                   "RP Act"),
-        (r"(?<!\w)GST\s+Act|Goods\s+and\s+Services\s+Tax",              "GST Act"),
-        (r"Service\s+Tax",                                               "Service Tax"),
-        (r"(?<!\w)SARFAESI\s+Act|Securitisation\s+and\s+Reconstruction","SARFAESI Act"),
+        (r"Factories\s+Act",                                                      "Factories Act"),
+        (r"Representation\s+of\s+the\s+People\s+Act",                           "RP Act"),
+        (r"(?<!\w)GST\s+Act|Goods\s+and\s+Services\s+Tax",                      "GST Act"),
+        (r"SARFAESI\s+Act|Securitisation\s+and\s+Reconstruction",               "SARFAESI Act"),
         (r"Real\s+Estate\s+(?:Regulatory\s+)?(?:Authority|Act)|(?<!\w)RERA(?!\w)", "RERA"),
+        (r"Rights\s+of\s+Persons\s+with\s+Disabilities|(?<!\w)RPwD\s+Act|RPWD\s+Act(?!\w)", "RPwD Act"),
+        (r"Food\s+Safety\s+and\s+Standards\s+Act|(?<!\w)FSS\s+Act(?!\w)",       "FSS Act"),
+        (r"Arms\s+Act",                                                           "Arms Act"),
+        (r"Contempt\s+of\s+Courts\s+Act",                                        "Contempt Act"),
+        (r"Land\s+Acquisition\s+Act",                                             "Land Acquisition Act"),
+        (r"U\.?P\.?\s+Zamindari\s+Abolition|Zamindari\s+Abolition",             "UP ZA Act"),
+        (r"Service\s+Tax",                                                        "Service Tax"),
+        (r"Constitution\s+of\s+India",                                            "Constitution"),
+        (r"Kerala\s+Police\s+Act",                                                "Kerala Police Act"),
+        (r"Information\s+Technology\s+Act",                                       "IT Act 2000"),
     ]
 
-    SEC_NUM = r"\d{1,4}[A-Z]?"
+    # Handles: 302, 12A, 2(y), 37(1), 141(2)(a), 198(4)
+    SEC_NUM = r"\d{1,4}(?:[A-Z]|\(\w+\))*"
 
     results = []
     seen = set()
 
     def add(num: str, label: str):
-        key = f"S.{num} {label}"
+        key = f"{num} {label}"
         if key not in seen:
             seen.add(key)
             results.append(key)
 
-    # ── Pass 1: Section(s) NNN [, NNN]* ... <act within 120 chars> ───────────
+    # ── Pass 1: "Section(s) NNN [, NNN]* ... <act within 150 chars>" ─────────
     for act_pat, act_label in ACTS:
         pattern = (
-            r"[Ss]ections?\s+"
+            r"(?:sub-\s*)?[Ss]ections?\s+"
             r"((?:" + SEC_NUM + r")(?:\s*[,/]\s*(?:" + SEC_NUM + r"))*"
             r"(?:\s+(?:and|&)\s+(?:" + SEC_NUM + r"))*)"
-            r"(?:[^.]{0,120}?)"
+            r"(?:[^.]{0,150}?)"
             r"(?:" + act_pat + r")"
         )
         for m in re.finditer(pattern, text, re.IGNORECASE | re.DOTALL):
             for num in re.findall(SEC_NUM, m.group(1)):
                 add(num, act_label)
 
-    # ── Pass 2: inline short forms — "u/s 302 IPC", "under Section 302 IPC" ──
+    # ── Pass 2: "Section NNN of the <ActName>" directly ──────────────────────
+    for act_pat, act_label in ACTS:
+        direct = (
+            r"(?:sub-\s*)?[Ss]ection\s+(" + SEC_NUM + r")"
+            r"\s+of\s+(?:the\s+)?"
+            r"(?:" + act_pat + r")"
+        )
+        for m in re.finditer(direct, text, re.IGNORECASE):
+            add(m.group(1), act_label)
+
+    # ── Pass 3: inline short forms — "u/s 302 IPC", "under Section 302 IPC" ──
     for act_pat, act_label in ACTS:
         short = (
             r"(?:u/s|under\s+[Ss]ection)\s+(" + SEC_NUM + r")"
@@ -340,22 +359,21 @@ def extract_sections(text: str) -> str:
         for m in re.finditer(short, text, re.IGNORECASE):
             add(m.group(1), act_label)
 
-    # ── Pass 3: "Section NNN thereof" / "Section NNN of the Act" ─────────────
-    # Resolve by finding the nearest act name in ±400 chars around the mention
+    # ── Pass 4: "Section NNN thereof/of the Act" — resolve from ±500 chars ───
     for m in re.finditer(
-        r"[Ss]ection\s+(" + SEC_NUM + r")\s+(?:thereof|of\s+(?:the\s+)?(?:said\s+)?[Aa]ct)",
+        r"(?:sub-\s*)?[Ss]ection\s+(" + SEC_NUM + r")"
+        r"\s+(?:thereof|of\s+(?:the\s+)?(?:said\s+)?[Aa]ct)",
         text
     ):
         num = m.group(1)
-        start = max(0, m.start() - 400)
-        end = min(len(text), m.end() + 400)
-        context = text[start:end]
+        ctx = text[max(0, m.start()-500): min(len(text), m.end()+500)]
         for act_pat, act_label in ACTS:
-            if re.search(act_pat, context, re.IGNORECASE):
+            if re.search(act_pat, ctx, re.IGNORECASE):
                 add(num, act_label)
-                break  # use first/closest act match
+                break
 
-    return "; ".join(results[:25]) if results else ""
+    return ", ".join(results[:25]) if results else ""
+
 
 
 def extract_outcome(text: str) -> str:
@@ -415,6 +433,272 @@ def extract_judgment_date_from_text(text: str, fallback: str) -> str:
     return fallback
 
 
+# ── Label mapping ─────────────────────────────────────────────────────────────
+FAVORABLE_OUTCOMES = {"Allowed", "Acquitted", "Quashed", "Sentence Reduced", "Sentence Modified"}
+
+def get_label(outcome: str) -> int | None:
+    """
+    Final rule for ML training labels:
+      1 = Allowed
+      0 = Dismissed
+      None = Disposed, Partly allowed, Unknown, etc. (removed)
+    """
+    if not outcome: return None
+    outcome = outcome.lower()
+
+    if "partly allowed" in outcome or "partially allowed" in outcome:
+        return None
+    elif "allowed" in outcome:
+        return 1
+    elif "dismissed" in outcome:
+        return 0
+    else:
+        return None   # remove these rows
+
+
+def _clean_body(text: str) -> str:
+    """
+    Deep-clean a judgment body. Removes all noise while preserving legal prose.
+    """
+    t = text
+
+    # ── 1. Binary / encoding artifacts ───────────────────────────────────────
+    t = re.sub(r"\x0c", "\n", t)                          # form feeds
+    t = re.sub(r"\(cid:\d+\)", "", t)                     # (cid:131) currency symbols
+    t = re.sub(r"\\u[0-9a-fA-F]{4}", "", t)               # unicode escapes
+
+    # ── 2. URLs and external references ──────────────────────────────────────
+    t = re.sub(r"Indian Kanoon\s*-\s*https?://\S+", "", t, flags=re.IGNORECASE)
+    t = re.sub(r"https?://\S+", "", t)
+
+    # ── 3. Digital signature blocks ───────────────────────────────────────────
+    t = re.sub(r"Date:\s*\d{4}\.\d{2}\.\d{2}\s+\d{2}:\d{2}:\d{2}\s+IST\s*\n?\s*Reason:", "", t)
+    t = re.sub(r"\bReason:\s*\n", "", t)   # leftover "Reason:" on its own
+    t = re.sub(r"Digitally\s+signed\s+by\s+\S+.*?\n", "", t, flags=re.IGNORECASE)
+    t = re.sub(r"Signature\s+Not\s+Verified.*?\n", "", t, flags=re.IGNORECASE)
+
+    # ── 4. Spaced-out judge signatures in footer ──────────────────────────────
+    # e.g. "… … … J . ( B . R . G A V A I ) … … … J . ( K . V . V I S W A N A T H A N )"
+    t = re.sub(r"[…\.\s]{6,}J\s*\.\s*[\(\[].{3,40}[\)\]]", "", t)
+    t = re.sub(r"(?:[A-Z]\s+\.?\s+){4,}[A-Z]", "", t)    # spaced caps: B . R . G A V A I
+
+    # ── 5. Lone page numbers ──────────────────────────────────────────────────
+    t = re.sub(r"^\s*\d{1,3}\s*$", "", t, flags=re.MULTILINE)
+
+    # ── 6. Section/chapter headings that add no value ─────────────────────────
+    HEADINGS = (
+        r"JUDGMENT|J\s*U\s*D\s*G\s*M\s*E\s*N\s*T"
+        r"|O\s*R\s*D\s*E\s*R"
+        r"|REPORTABLE|NON.REPORTABLE"
+        r"|IN THE SUPREME COURT OF INDIA"
+        r"|BACKGROUND|BRIEF\s+RESUME\s+OF\s+FACTS|BRIEF\s+FACTS"
+        r"|THE\s+APPEAL|THE\s+QUESTION|THE\s+ISSUE"
+        r"|CONCLUSION|FINDINGS|ANALYSIS|DISCUSSION"
+        r"|SUBMISSIONS?|ARGUMENTS?"
+        r"|INDEX|FACTUAL\s+(?:MATRIX|BACKGROUND|DETAILS?)"
+        r"|ISSUES?\s+FOR\s+CONSIDERATION"
+    )
+    t = re.sub(rf"^\s*(?:{HEADINGS})\s*$", "", t, flags=re.MULTILINE | re.IGNORECASE)
+
+    # ── 7. Judge name lines ───────────────────────────────────────────────────
+    # "DIPANKAR DATTA, J." / "J.K. MAHESHWARI, J." / "Mehta, J." / "VIKRAM NATH, J.:"
+    t = re.sub(r"^[A-Z][A-Za-z\s\.\,]+,\s*J\.\s*:?\s*$", "", t, flags=re.MULTILINE)
+    # "SATISH CHANDRA SHARMA, J." all caps
+    t = re.sub(r"^[A-Z][A-Z\s\.]+,\s*J\.\s*$", "", t, flags=re.MULTILINE)
+
+    # ── 8. Paragraph numbering at line start ──────────────────────────────────
+    t = re.sub(r"^\s*\d{1,3}\.\s+", "", t, flags=re.MULTILINE)
+
+    # ── 9. Footnote superscripts glued to words ───────────────────────────────
+    # "Singh1" → "Singh", "20231" → "2023", "19735" → "1973"
+    # Pattern: word char followed by 1-2 digits at word boundary before space/punct
+    t = re.sub(r"(\b\w+?)(\d{1,2})(?=[\s,\.\;\:\)\]])", lambda m:
+        m.group(1) if not m.group(1)[-1].isdigit() else m.group(0), t)
+    # Specifically fix years with trailing footnote digit: "2024 2" or "20242"
+    t = re.sub(r"\b((?:19|20)\d{2})\d{1,2}\b", r"\1", t)
+
+    # ── 10. Case title repetition (page headers) ──────────────────────────────
+    t = re.sub(
+        r"^.{5,60}\s+vs\.?\s+.{5,60}\s+on\s+\d{1,2}\s+\w+,?\s+\d{4}\s*$",
+        "", t, flags=re.MULTILINE | re.IGNORECASE
+    )
+
+    # ── 11. Author/Bench metadata ─────────────────────────────────────────────
+    t = re.sub(r"^(?:Author|Bench)\s*:.*$", "", t, flags=re.MULTILINE | re.IGNORECASE)
+
+    # ── 12. Bullet points / list markers ─────────────────────────────────────
+    t = re.sub(r"^[\•\-\*]\s+", "", t, flags=re.MULTILINE)
+
+    # ── 13. Whitespace normalisation ──────────────────────────────────────────
+    t = re.sub(r"\n{3,}", "\n\n", t)
+    t = re.sub(r"[ \t]+\n", "\n", t)
+    t = re.sub(r"[ \t]{2,}", " ", t)
+
+    return t.strip()
+
+
+def _good_sentence(s: str) -> bool:
+    """
+    Return True if sentence is clean and meaningful.
+    Rejects: too short, all-caps headers, broken fragments, OCR noise,
+             sentences starting with bare numbers/case refs.
+    """
+    s = s.strip()
+    if len(s) < 40:
+        return False
+    # All-caps header (e.g. "BACKGROUND", "THE APPEAL")
+    if re.match(r"^[A-Z\s\.\-]{4,}$", s):
+        return False
+    # Starts with a bare case number or SLP ref: "4036-4038 of 2024..."
+    if re.match(r"^\d[\d\-/]+\s+of\s+\d{4}", s, re.IGNORECASE):
+        return False
+    # Starts with a lone initial or number fragment
+    if re.match(r"^[A-Z]\.\s", s):
+        return False
+    # Contains leftover "Reason:" artifact
+    if re.search(r"\bReason:\s*$", s):
+        return False
+    # Contains broken year like "dated 7th March, 20" (year cut off < 4 digits)
+    if re.search(r"\b(19|20)\d{0,1}\b(?!\d)", s):
+        return False
+    # Sentence is mostly numbers/symbols
+    alpha = sum(c.isalpha() for c in s)
+    if alpha / max(len(s), 1) < 0.5:
+        return False
+    return True
+
+
+def extract_case_text(text: str) -> str:
+    """
+    Extract and deep-clean the judgment body.
+    Returns clean prose with no headers, judge names, numbering, or noise.
+    """
+    m = re.search(r"\b(?:JUDGMENT|J\s*U\s*D\s*G\s*M\s*E\s*N\s*T|O\s*R\s*D\s*E\s*R)\b",
+                  text, re.IGNORECASE)
+    body = text[m.start():] if m else text
+
+    # Cut at signature block
+    sig = re.search(r"\n[…\.\s]{8,}(?:J\.|NEW DELHI|New Delhi)", body, re.IGNORECASE)
+    if sig:
+        body = body[:sig.start()]
+
+    return _clean_body(body)
+
+
+def _extract_decision_sentences(clean_body: str) -> list[str]:
+    """
+    Extract the final 1-2 sentences that contain the outcome signal.
+    Operates on the already-cleaned body (no noise, no page headers).
+    """
+    OUTCOME_SIGNALS = (
+        r"\baccordingly\b"
+        r"|\bappeal[s]?\s+(?:is\s+|are\s+)?(?:hereby\s+)?(?:allowed|dismissed|disposed)"
+        r"|\bpetition[s]?\s+(?:is\s+|are\s+)?(?:hereby\s+)?(?:allowed|dismissed|disposed)"
+        r"|\bstand[s]?\s+disposed"
+        r"|\bhereby\s+(?:allowed|dismissed|quashed|set\s+aside)"
+        r"|\bset\s+aside\b"
+        r"|\bconviction\s+.{0,40}set\s+aside"
+        r"|\bacquitted\b"
+        r"|\bappeal[s]?\s+lack[s]?\s+merit"
+        r"|\bno\s+merit\b"
+        r"|\bimpugned\s+(?:judgment|order)\s+.{0,30}(?:set\s+aside|upheld|confirmed)"
+        r"|\bstand[s]?\s+restored"
+        r"|\bremanded\b"
+        r"|\bwe\s+allow\b|\bwe\s+dismiss\b"
+    )
+    # Work only from the last 2000 chars of the CLEAN body
+    tail = clean_body[-2000:]
+    # Flatten newlines so sentence splitting works correctly
+    tail = re.sub(r"\n+", " ", tail)
+    sentences = re.split(r"(?<=[.!?])\s+", tail)
+    decision = []
+    for s in sentences:
+        s = s.strip()
+        if _good_sentence(s) and re.search(OUTCOME_SIGNALS, s, re.IGNORECASE):
+            decision.append(s)
+    return decision[-2:] if decision else []
+
+
+def build_input_text(text: str, sections: str, outcome: str, category: str) -> str:
+    """
+    Build clean, concise model-ready input_text (150-300 words):
+      - 2 facts sentences (beginning)
+      - 1-2 reasoning sentences (middle)
+      - 1-2 decision sentences with explicit outcome signal (end)
+      - Sections appended
+    Single flat paragraph — no newlines, no noise.
+    """
+    m = re.search(r"\b(?:JUDGMENT|J\s*U\s*D\s*G\s*M\s*E\s*N\s*T|O\s*R\s*D\s*E\s*R)\b",
+                  text, re.IGNORECASE)
+    body = text[m.start():] if m else text
+    sig = re.search(r"\n[…\.\s]{8,}(?:J\.|NEW DELHI|New Delhi)", body, re.IGNORECASE)
+    if sig:
+        body = body[:sig.start()]
+
+    body = _clean_body(body)
+
+    # Flatten to single-line prose — eliminates all \n in output
+    flat = re.sub(r"\n+", " ", body)
+    flat = re.sub(r"\s{2,}", " ", flat).strip()
+
+    # Split into clean sentences
+    sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", flat)
+                 if _good_sentence(s)]
+
+    if not sentences:
+        base = flat[:600]
+        if sections:
+            base += f" Sections: {sections}."
+        return base.strip()
+
+    n = len(sentences)
+
+    # ── Facts: first 2 good sentences ────────────────────────────────────────
+    facts = sentences[:2]
+
+    # ── Reasoning: 1-2 sentences from 40-70% of document ────────────────────
+    mid_start = max(2, int(n * 0.40))
+    mid_end   = max(mid_start + 2, int(n * 0.70))
+    reasoning_pool = sentences[mid_start:mid_end]
+    REASONING_SIGNALS = (
+        r"\bcourt\b|\bheld\b|\bobserved\b|\bfound\b|\bliability\b"
+        r"|\bevidence\b|\bprinciple\b|\bcannot\b|\bmust\b|\brequired\b"
+        r"|\bestablished\b|\bproved\b|\bshown\b|\bdemonstrated\b"
+    )
+    reasoning = [s for s in reasoning_pool
+                 if re.search(REASONING_SIGNALS, s, re.IGNORECASE)][:2]
+    if not reasoning:
+        reasoning = reasoning_pool[:1]
+
+    # ── Decision: from clean body, must have outcome signal ──────────────────
+    decision = _extract_decision_sentences(body)
+    if not decision:
+        decision = [s for s in sentences[-3:] if _good_sentence(s)][-2:]
+
+    # ── Compose, deduplicate, strip any residual newlines ────────────────────
+    seen = set()
+    parts = []
+    for s in facts + reasoning + decision:
+        s = re.sub(r"\s+", " ", s).strip()
+        if s not in seen:
+            seen.add(s)
+            parts.append(s)
+
+    result = " ".join(parts)
+
+    # ── Trim to 300 words ─────────────────────────────────────────────────────
+    words = result.split()
+    if len(words) > 300:
+        result = " ".join(words[:300]).rsplit(".", 1)[0] + "."
+
+    # ── Append sections ───────────────────────────────────────────────────────
+    if sections:
+        result += f" Sections: {sections}."
+
+    return result.strip()
+
+
+
 def extract_fields(pdf_path: Path) -> dict:
     filename = pdf_path.name
     text = extract_text_from_pdf(pdf_path)
@@ -423,34 +707,39 @@ def extract_fields(pdf_path: Path) -> dict:
     fn_data = parse_filename(filename)
 
     # From text
-    case_id = extract_case_id(text)
-    case_number = extract_case_number(text)
-    sections = extract_sections(text)
-    outcome = extract_outcome(text)
-    category = classify_category(text)
-    word_count = len(text.split())
+    case_id      = extract_case_id(text)
+    case_number  = extract_case_number(text)
+    sections     = extract_sections(text)
+    outcome      = extract_outcome(text)
+    category     = classify_category(text)
+    word_count   = len(text.split())
     judgment_date = extract_judgment_date_from_text(text, fn_data["judgment_date"])
+    label        = get_label(outcome)
+    case_text    = extract_case_text(text)
+
+    # Normalize sections: "S.302 IPC; S.376 IPC" → "302 IPC, 376 IPC"
+    sections_norm = ""
+    if sections:
+        parts = [re.sub(r"^S\.", "", s.strip()) for s in sections.split(";")]
+        sections_norm = ", ".join(p.strip() for p in parts if p.strip())
+
+    input_text   = build_input_text(text, sections_norm, outcome, category)
 
     # Refine appellant/respondent from text header (first 800 chars)
     appellant = fn_data["appellant"]
     respondent = fn_data["respondent"]
     header = text[:800]
 
-    # Try to find "..APPELLANT(S)" / "..RESPONDENT(S)" block in text
-    # These lines look like: "ABDUL NASSAR ..APPELLANT(S)"
     app_match = re.search(
         r"^([A-Z][A-Z0-9\s\.\,\(\)&/\-]+?)\s*\.{2,}\s*APPELLANT",
-        header,
-        re.IGNORECASE | re.MULTILINE,
+        header, re.IGNORECASE | re.MULTILINE,
     )
     res_match = re.search(
         r"^([A-Z][A-Z0-9\s\.\,\(\)&/\-]+?)\s*\.{2,}\s*RESPONDENT",
-        header,
-        re.IGNORECASE | re.MULTILINE,
+        header, re.IGNORECASE | re.MULTILINE,
     )
     if app_match:
         val = app_match.group(1).strip()
-        # Only use if it's a single clean line (no embedded newlines)
         if "\n" not in val and len(val) < 120:
             appellant = val.title()
     if res_match:
@@ -458,18 +747,24 @@ def extract_fields(pdf_path: Path) -> dict:
         if "\n" not in val and len(val) < 120:
             respondent = val.title()
 
+    # Quality flag: mark low-quality extractions (< 150 words in body)
+    quality_ok = len(case_text.split()) >= 150
+
     return {
-        "filename": filename,
-        "case_id": case_id,
-        "case_number": case_number,
-        "appellant": appellant,
-        "respondent": respondent,
+        "case_id":       case_id,
+        "case_number":   case_number,
+        "appellant":     appellant,
+        "respondent":    respondent,
         "judgment_date": judgment_date,
-        "sections": sections,
-        "outcome": outcome,
-        "judgementcategory": category,
-        "word_count": word_count,
-        "case_text": text,
+        "sections":      sections_norm,
+        "category":      category,
+        "outcome":       outcome,
+        "label":         label,
+        "word_count":    word_count,
+        "quality_ok":    quality_ok,
+        "case_text":     case_text,
+        "input_text":    input_text,
+        "filename":      filename,
     }
 
 
@@ -488,38 +783,61 @@ def main():
         record = extract_fields(pdf_path)
         results.append(record)
 
-    # ── Write CSV ─────────────────────────────────────────────────────────────
-    fieldnames = [
-        "filename", "case_id", "case_number", "appellant", "respondent",
-        "judgment_date", "sections", "outcome", "judgementcategory", "word_count","case_text,"
-    ]
-    with open(OUTPUT_CSV, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(results)
+    total_raw = len(results)
 
-    # ── Write JSON ────────────────────────────────────────────────────────────
-    with open(OUTPUT_JSON, "w", encoding="utf-8") as f:
-        json.dump(results, f, indent=2, ensure_ascii=False)
+    #  Filter using pandas as requested ──────────────────────────────────────
+    import pandas as pd
+    df = pd.DataFrame(results)
 
-    print(f"\nDone. {len(results)} records written.")
+    # 1. Start with raw extracted rows
+    total_raw = len(df)
+
+    # 2. Filter Bad Rows
+    df = df[df['label'].notnull()]
+    df = df[df['quality_ok'] == True]
+
+    # Convert label to integer now that nulls are removed
+    df['label'] = df['label'].astype(int)
+
+    # 3. Use ONLY input_text
+    df_final = df[['input_text', 'label']].copy()
+
+    print(f"\nFiltered: {total_raw} total → {len(df_final)} usable records")
+    print(f"  Dropped:     {total_raw - len(df_final)} records (ambiguous label or low quality)")
+
+    #  Write CSV ─────────────────────────────────────────────────────────────
+    df_final.to_csv(OUTPUT_CSV, index=False, encoding="utf-8")
+
+    #  Write JSON ────────────────────────────────────────────────────────────
+    df_final.to_json(OUTPUT_JSON, orient="records", indent=2, force_ascii=False)
+
+    print(f"\nDone. {len(df_final)} records written.")
     print(f"  CSV  → {OUTPUT_CSV}")
     print(f"  JSON → {OUTPUT_JSON}")
 
     # ── Quick stats ───────────────────────────────────────────────────────────
     outcomes = {}
     categories = {}
+    labels = {0: 0, 1: 0}
+    low_quality = 0
     for r in results:
         outcomes[r["outcome"]] = outcomes.get(r["outcome"], 0) + 1
-        categories[r["judgementcategory"]] = categories.get(r["judgementcategory"], 0) + 1
+        categories[r["category"]] = categories.get(r["category"], 0) + 1
+        if r["label"] is not None:
+            labels[r["label"]] = labels.get(r["label"], 0) + 1
+        if not r["quality_ok"]:
+            low_quality += 1
 
     print("\nOutcome distribution:")
     for k, v in sorted(outcomes.items(), key=lambda x: -x[1]):
-        print(f"  {k:<25} {v}")
+        print(f"  {k:<28} {v}")
 
     print("\nCategory distribution:")
     for k, v in sorted(categories.items(), key=lambda x: -x[1]):
         print(f"  {k:<35} {v}")
+
+    print(f"\nLabel distribution:  0 (unfavorable)={labels[0]}  1 (favorable)={labels[1]}")
+    print(f"Low quality records (< 150 words): {low_quality}")
 
 
 if __name__ == "__main__":
