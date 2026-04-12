@@ -126,7 +126,17 @@
 
   <!-- SECTION 3: ML Insights -->
   <div class="ml-card">
-    <h6 class="fw-bold mb-3 text-white"><i class="bi bi-cpu me-2"></i>ML Insights</h6>
+    <h6 class="fw-bold mb-3 text-white"><i class="bi bi-cpu me-2"></i>ML Insights
+      {% if result.label_source == "ml_model" %}
+        <span style="background:rgba(255,255,255,.2);font-size:.7rem;padding:2px 10px;border-radius:999px;font-weight:600;margin-left:8px;">
+          <i class="bi bi-stars"></i> InLegalBERT + LogReg
+        </span>
+      {% else %}
+        <span style="background:rgba(255,255,255,.15);font-size:.7rem;padding:2px 10px;border-radius:999px;font-weight:600;margin-left:8px;">
+          Rule-based
+        </span>
+      {% endif %}
+    </h6>
     <div class="row g-3">
       <div class="col-sm-4">
         <div class="label">Predicted Case Type</div>
@@ -135,7 +145,11 @@
       <div class="col-sm-4">
         <div class="label">Outcome Label</div>
         <div class="value">
-          {% if result.label == 1 %}
+          {% if result.ml_label == 1 %}
+            <span style="color:#86efac;">✅ Favorable (1)</span>
+          {% elif result.ml_label == 0 %}
+            <span style="color:#fca5a5;">❌ Unfavorable (0)</span>
+          {% elif result.label == 1 %}
             <span style="color:#86efac;">✅ Favorable (1)</span>
           {% elif result.label == 0 %}
             <span style="color:#fca5a5;">❌ Unfavorable (0)</span>
@@ -150,22 +164,46 @@
       </div>
     </div>
     <div class="mt-3">
-      <div class="label mb-1">Model Confidence — {{ result.confidence }}</div>
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <span class="label">Model Confidence</span>
+        <span style="font-size:.95rem;font-weight:700;">{{ result.confidence }}</span>
+      </div>
       <div class="confidence-bar-wrap">
         <div class="confidence-bar" id="conf-bar" style="width:0%"></div>
       </div>
     </div>
     <p class="mt-3 mb-0" style="font-size:.78rem; opacity:.65;">
-      Classification performed using ML models trained on 400+ Supreme Court judgments. Outcome encoded as binary label (1 = Allowed, 0 = Dismissed).
+      {% if result.label_source == "ml_model" %}
+        Prediction by Logistic Regression on InLegalBERT embeddings (law-ai/InLegalBERT), trained on Supreme Court judgments.
+      {% else %}
+        ML model not yet trained — showing rule-based outcome. Run <code>python manage.py build_ml</code> to enable ML predictions.
+      {% endif %}
     </p>
   </div>
 
-  <!-- SECTION 4: Similar Cases (placeholder) -->
+  <!-- SECTION 4: Similar Cases -->
+  {% if result.similar_cases %}
+  <div class="card p-4">
+    <h6 class="fw-bold mb-3"><i class="bi bi-diagram-2 text-primary me-2"></i>Similar Cases
+      <span class="text-muted fw-normal" style="font-size:.8rem;">— cosine similarity · InLegalBERT embeddings</span>
+    </h6>
+    {% for case in result.similar_cases %}
+    <div style="background:#f8faff;border-radius:10px;padding:.85rem 1rem;border:1px solid #e2e8f0;margin-bottom:.75rem;">
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <span style="font-size:.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#94a3b8;">Case {{ forloop.counter }}</span>
+        <span style="background:#dbeafe;color:#1d4ed8;font-size:.75rem;padding:2px 10px;border-radius:999px;font-weight:700;">{{ case.score }}% match</span>
+      </div>
+      <p style="font-size:.85rem;color:#334155;line-height:1.6;margin:0;">{{ case.text }}</p>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
   <div class="placeholder-card">
     <i class="bi bi-diagram-2 fs-2 mb-2 d-block text-primary" style="opacity:.4;"></i>
     <h6 class="fw-semibold text-secondary">Similar Cases</h6>
-    <p class="small mb-0">Similarity module will be integrated — cosine similarity on TF-IDF vectors across the dataset.</p>
+    <p class="small mb-0">Run <code>python manage.py build_ml</code> to build embeddings and enable similarity search.</p>
   </div>
+  {% endif %}
 
   <!-- SECTION 5: System Info -->
   <div class="card p-4">
@@ -175,7 +213,8 @@
     <div class="mt-2">
       <span class="badge bg-light text-secondary border me-1">NUC Legal AI v1.0</span>
       <span class="badge bg-light text-secondary border me-1">Django 6.0</span>
-      <span class="badge bg-light text-secondary border me-1">pdfplumber</span>
+      <span class="badge bg-light text-secondary border me-1">InLegalBERT</span>
+      <span class="badge bg-light text-secondary border me-1">scikit-learn</span>
       <span class="badge bg-light text-secondary border">Cohere command-r</span>
     </div>
   </div>

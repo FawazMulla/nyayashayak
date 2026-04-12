@@ -455,7 +455,7 @@ def get_label(outcome: str) -> int | None:
     elif "dismissed" in outcome:
         return 0
     else:
-        return None   # remove these rows
+        return None   # remove
 
 
 def _clean_body(text: str) -> str:
