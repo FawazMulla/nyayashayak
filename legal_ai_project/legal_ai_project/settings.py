@@ -129,3 +129,11 @@ DATA_DIR = BASE_DIR / "data"
 
 COHERE_API_KEY = os.environ.get("COHERE_API_KEY", "")
 AI_CORRECTION_ENABLED = os.environ.get("AI_CORRECTION_ENABLED", "true").lower() == "true"
+
+# Chatbot — separate Oracle Cloud Cohere key + toggle
+CHATBOT_API_KEY = os.environ.get("CHATBOT_API_KEY", "")
+CHATBOT_ENABLED = os.environ.get("CHATBOT_ENABLED", "true").lower() == "true"
+
+# Sessions
+SESSION_ENGINE = "django.contrib.sessions.backends.db"
+SESSION_COOKIE_AGE = 3600  # 1 hour

@@ -28,6 +28,18 @@
     .info-item { background: #f8faff; border-radius: 10px; padding: .85rem 1rem; border: 1px solid #e2e8f0; }
     .back-btn { background: white; border: 1px solid #e2e8f0; border-radius: 10px; color: #475569; padding: .5rem 1.25rem; font-size: .9rem; }
     .back-btn:hover { background: #f1f5f9; }
+    /* Chatbot */
+    .qbtn { background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;border-radius:8px;padding:4px 12px;font-size:.78rem;font-weight:600;cursor:pointer;transition:background .15s; }
+    .qbtn:hover { background:#dbeafe; }
+    .msg-bubble { max-width:80%;padding:.65rem 1rem;border-radius:14px;font-size:.88rem;line-height:1.6;white-space:pre-wrap;word-break:break-word; }
+    .msg-bubble.bot { background:#f1f5f9;color:#1e293b;border-bottom-left-radius:4px; }
+    .msg-bubble.user { background:#1d4ed8;color:white;border-bottom-right-radius:4px; }
+    .bot-msg { display:flex;justify-content:flex-start; }
+    .user-msg { display:flex;justify-content:flex-end; }
+    .typing-dot { display:inline-block;width:7px;height:7px;border-radius:50%;background:#94a3b8;animation:blink 1.2s infinite; }
+    .typing-dot:nth-child(2){animation-delay:.2s}
+    .typing-dot:nth-child(3){animation-delay:.4s}
+    @keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
   </style>
 </head>
 <body>
@@ -219,16 +231,138 @@
     </div>
   </div>
 
+  <!-- SECTION 6: AI Legal Chatbot -->
+  <div class="card p-0 overflow-hidden" id="chatbot-section">
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#1e3a8a,#1d4ed8);padding:1.25rem 1.5rem;" class="d-flex align-items-center justify-content-between">
+      <div>
+        <h6 class="fw-bold text-white mb-0"><i class="bi bi-chat-dots me-2"></i>AI Legal Assistant</h6>
+        <p class="mb-0" style="font-size:.75rem;opacity:.7;color:white;">Ask anything about this case · Powered by Cohere</p>
+      </div>
+      <span style="background:rgba(255,255,255,.15);color:white;font-size:.7rem;padding:3px 10px;border-radius:999px;font-weight:600;">
+        <i class="bi bi-circle-fill me-1" style="font-size:.5rem;color:#4ade80;"></i>Online
+      </span>
+    </div>
+
+    <!-- Quick action buttons -->
+    <div style="padding:.75rem 1rem;background:#f8faff;border-bottom:1px solid #e2e8f0;display:flex;flex-wrap:wrap;gap:.5rem;">
+      <button class="qbtn" onclick="quickAction('explain')"><i class="bi bi-lightbulb me-1"></i>Explain Case</button>
+      <button class="qbtn" onclick="quickAction('nextsteps')"><i class="bi bi-arrow-right-circle me-1"></i>Next Steps</button>
+      <button class="qbtn" onclick="quickAction('risk')"><i class="bi bi-exclamation-triangle me-1"></i>Risk Analysis</button>
+      <button class="qbtn" onclick="quickAction('arguments')"><i class="bi bi-chat-square-quote me-1"></i>Arguments</button>
+      <button class="qbtn" onclick="quickAction('compare')"><i class="bi bi-diagram-2 me-1"></i>Compare Cases</button>
+      <button class="qbtn" onclick="quickAction('eli5')"><i class="bi bi-emoji-smile me-1"></i>ELI5</button>
+    </div>
+
+    <!-- Messages -->
+    <div id="chat-messages" style="height:380px;overflow-y:auto;padding:1.25rem;background:white;display:flex;flex-direction:column;gap:.75rem;">
+      <div class="bot-msg">
+        <div class="msg-bubble bot">
+          👋 Hello! I'm your AI Legal Assistant for this case. I can explain the judgment, suggest next steps, analyze risks, generate arguments, or answer any legal question you have. Use the quick buttons above or type your question below.
+        </div>
+      </div>
+    </div>
+
+    <!-- Input -->
+    <div style="padding:1rem;background:#f8faff;border-top:1px solid #e2e8f0;">
+      <div class="d-flex gap-2">
+        <input type="text" id="chatInput" class="form-control" placeholder="Ask about this case…"
+          style="border-radius:10px;border-color:#e2e8f0;font-size:.9rem;"
+          onkeydown="if(event.key==='Enter')sendMessage()"/>
+        <button onclick="sendMessage()" class="btn btn-primary px-3" style="border-radius:10px;white-space:nowrap;">
+          <i class="bi bi-send-fill"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  // Animate confidence bar on load
+  // Confidence bar
   const confStr = "{{ result.confidence }}";
   const pct = parseInt(confStr) || 0;
-  setTimeout(() => {
-    document.getElementById('conf-bar').style.width = pct + '%';
-  }, 300);
+  setTimeout(() => { document.getElementById('conf-bar').style.width = pct + '%'; }, 300);
+
+  // ── Chatbot ────────────────────────────────────────────────────────────────
+  const messages  = document.getElementById('chat-messages');
+  const csrfToken = '{{ csrf_token }}';
+
+  function scrollBottom() {
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function appendMsg(text, role) {
+    const wrap = document.createElement('div');
+    wrap.className = role === 'user' ? 'user-msg' : 'bot-msg';
+    const bubble = document.createElement('div');
+    bubble.className = 'msg-bubble ' + role;
+    bubble.textContent = text;
+    wrap.appendChild(bubble);
+    messages.appendChild(wrap);
+    scrollBottom();
+    return bubble;
+  }
+
+  function showTyping() {
+    const wrap = document.createElement('div');
+    wrap.className = 'bot-msg';
+    wrap.id = 'typing-indicator';
+    wrap.innerHTML = '<div class="msg-bubble bot" style="padding:.5rem .85rem;">' +
+      '<span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div>';
+    messages.appendChild(wrap);
+    scrollBottom();
+  }
+
+  function removeTyping() {
+    const t = document.getElementById('typing-indicator');
+    if (t) t.remove();
+  }
+
+  function postToBot(query, action) {
+    showTyping();
+    const body = 'query=' + encodeURIComponent(query) + '&action=' + encodeURIComponent(action);
+    fetch('/chatbot/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': csrfToken,
+      },
+      body: body,
+    })
+    .then(r => r.json())
+    .then(data => {
+      removeTyping();
+      appendMsg(data.response, 'bot');
+    })
+    .catch(() => {
+      removeTyping();
+      appendMsg('⚠️ Network error — please try again.', 'bot');
+    });
+  }
+
+  function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const query = input.value.trim();
+    if (!query) return;
+    appendMsg(query, 'user');
+    input.value = '';
+    postToBot(query, '');
+  }
+
+  function quickAction(action) {
+    const labels = {
+      explain:   '📖 Explain this case',
+      nextsteps: '➡️ What should I do next?',
+      risk:      '⚠️ Risk analysis',
+      arguments: '💬 Generate arguments',
+      compare:   '🔍 Compare with similar cases',
+      eli5:      '😊 Explain like I\'m 5',
+    };
+    appendMsg(labels[action] || action, 'user');
+    postToBot('', action);
+  }
 </script>
 </body>
 </html>

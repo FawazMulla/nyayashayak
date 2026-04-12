@@ -2,8 +2,10 @@ import uuid
 from pathlib import Path
 
 from django.conf import settings
+from django.http import JsonResponse
 from django.shortcuts import render
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods, require_POST
 
 from .extractor import extract_fields, extract_text_from_pdf
 from .correction import hybrid_correction, is_legal_document
@@ -130,4 +132,29 @@ def analyze_case(request):
 
     save_to_dataset(result)
 
+    # ── Store context in session for chatbot ──────────────────────────────────
+    request.session["case_context"] = {
+        "summary":       result.get("ai_summary") or result.get("input_text", ""),
+        "input_text":    result.get("input_text", ""),
+        "appellant":     result.get("appellant", ""),
+        "category":      result.get("category", ""),
+        "outcome":       result.get("outcome", ""),
+        "sections":      result.get("sections", ""),
+        "prediction":    final_label,
+        "confidence":    ml_conf if ml_conf is not None else conf_pct / 100,
+        "similar_cases": similar_cases,
+    }
+
     return render(request, "result.html", {"result": result})
+
+
+@require_POST
+def chatbot_api(request):
+    """AJAX endpoint — returns JSON chatbot response."""
+    user_query = request.POST.get("query", "").strip()
+    action     = request.POST.get("action", "").strip()
+    context    = request.session.get("case_context", {})
+
+    from .chatbot.chatbot import generate_chat_response
+    response = generate_chat_response(user_query, context, action)
+    return JsonResponse({"response": response})

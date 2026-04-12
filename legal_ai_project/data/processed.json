@@ -142,5 +142,21 @@
     "category": "Criminal",
     "outcome": "Allowed",
     "sections": "120 IPC, 121 IPC, 121A IPC, 122 IPC, 153A IPC, 153B IPC"
+  },
+  {
+    "case_id": "2024 INSC 341",
+    "input_text": "At the outset, we take on record that the counsel for the petitioners, in unison, have stated that the petitioners do not attribute any motive or malice to the Election Commission of India, or for that matter contend that the Electronic Voting Machines have been tutored or configured to favour or disfavour a candidate or political party. 2 For short, ‘EVMs’ possibility of manipulating the EVMs there is suspicion and, therefore, this Court should step in to instil confidence in the voters and the people. This process is done way before the elections and it is impossible to know the serial number of any 21 The EVM, as earlier observed and we clarify here, means the ballot unit, the control unit and the VVPAT unit. One cannot ascertain and know which button/key in the ballot unit will be allocated to a particular candidate or a political party. The expenses will be refunded, in case the EVM is found to be tampered. The writ petitions and all pending applications, including the applications for intervention, are disposed of in the above terms. Sections: 177 IPC.",
+    "label": 1,
+    "category": "Constitutional / Writ",
+    "outcome": "Allowed",
+    "sections": "177 IPC"
+  },
+  {
+    "case_id": "2024 INSC 549",
+    "input_text": "order dated 20th October, 2011, passed by the Division Bench of the High Court of Judicature at Patna in a Letters Patent Appeal filed by the respondent against an order dated 3rd October, 2007, passed by the learned Single Judge in a writ petition filed by the respondent. The respondent had averred in the writ petition that though he was promoted on the post of Joint Secretary on 5th March, 2003, the said promotion ought to be reckoned from July, 1997, when the post had actually fallen vacant. State of Punjab and Others, laying emphasis on Article 14 and Article 16(1) of the Constitution of India held that if a person who satisfies the eligibility and the criteria for promotion but still is not considered for promotion, then there will be clear violation of his/her’s fundamental right. It has been held repeatedly by this Court that clause (1) of Article 16 is a facet of Article 14 and that it takes its roots from Article 14. Accordingly, the present appeal succeeds. For the reasons stated aforesaid, the impugned order dated 20th October 2011 is set aside and the order dated 3rd October, 2007 passed by the learned Single Judge is restored.",
+    "label": null,
+    "category": "Civil",
+    "outcome": "Unknown",
+    "sections": ""
   }
 ]

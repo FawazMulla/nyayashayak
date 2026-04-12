@@ -72,10 +72,12 @@ def is_legal_document(text: str) -> tuple[bool, str]:
     return True, ""
 
 
-# ── Lazy Cohere client ────────────────────────────────────────────────────────
+# ── Extractor pipeline Cohere client (COHERE_API_KEY) ────────────────────────
 _co = None
+_CORRECTION_MODEL = "command-a-03-2025"
 
 def _get_client():
+    """Uses COHERE_API_KEY — extractor/correction pipeline only."""
     global _co
     if _co is None:
         try:
@@ -85,7 +87,7 @@ def _get_client():
                 return None
             _co = cohere.ClientV2(api_key=api_key)
         except Exception as e:
-            logger.warning(f"Cohere client init failed: {e}")
+            logger.warning(f"Correction Cohere client init failed: {e}")
             return None
     return _co
 
@@ -174,7 +176,7 @@ def run_ai_pipeline(data: dict, raw_text: str) -> tuple[str, dict]:
 
     try:
         response     = co.chat(
-            model="command-r",
+            model=_CORRECTION_MODEL,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.2,
         )
