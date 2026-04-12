@@ -12,9 +12,17 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-MODEL_NAME   = "law-ai/InLegalBERT"
-# If you've manually downloaded the model, set this to the local folder path:
-# MODEL_NAME = r"C:\Users\Fawaz\.cache\huggingface\hub\models--law-ai--InLegalBERT\snapshots\main"
+# Local model path inside the repo — download files from:
+# https://huggingface.co/law-ai/InLegalBERT/tree/main
+# and place them in legal_ai_project/models/InLegalBERT/
+_LOCAL_MODEL_DIR = Path(__file__).resolve().parents[2] / "models" / "InLegalBERT"
+
+def _model_source() -> str:
+    """Use local repo path if model files exist there, else fall back to HF hub."""
+    required = ["config.json", "tokenizer_config.json", "vocab.txt"]
+    if all((_LOCAL_MODEL_DIR / f).exists() for f in required):
+        return str(_LOCAL_MODEL_DIR)
+    return "law-ai/InLegalBERT"   # will download from HuggingFace
 MAX_TOKENS   = 512
 EMBED_FILE   = "embeddings.npy"
 META_FILE    = "embeddings_meta.npy"   # stores input_text strings for similarity
@@ -32,9 +40,10 @@ def load_model():
     try:
         from transformers import AutoTokenizer, AutoModel
         import torch  # noqa — confirm available
-        logger.info(f"Loading InLegalBERT from {MODEL_NAME}…")
-        _tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-        _model     = AutoModel.from_pretrained(MODEL_NAME)
+        source = _model_source()
+        logger.info(f"Loading InLegalBERT from: {source}")
+        _tokenizer = AutoTokenizer.from_pretrained(source)
+        _model     = AutoModel.from_pretrained(source)
         _model.eval()
         logger.info("InLegalBERT loaded OK")
     except Exception as e:

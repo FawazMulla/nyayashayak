@@ -26,7 +26,6 @@ build/
 *.csv
 *.json
 *.npy
-*.pkl
 *.bin
 *.pt
 *.h5

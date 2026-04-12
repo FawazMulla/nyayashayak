@@ -118,5 +118,29 @@
     "category": "Criminal",
     "outcome": "Acquitted",
     "sections": "302 IPC, 148 IPC, 149 IPC, 147 IPC, 307 IPC, 313 CrPC, 27 Evidence Act"
+  },
+  {
+    "case_id": "2025 INSC 295",
+    "input_text": "In this appeal, challenge has been made to the judgment and order dated 26.08.2011 passed by the High Court of Judicature for Rajasthan at Jaipur Bench (for short ‘High Court’ hereinafter) in D.B. 4, Kota (‘trial court’ for short) in Sessions Case No. In his evidence-in-chief, he stated that Ahsan alongwith Faeem had come to his house in the night at about 11:00 to 11:15 PM. He also stated that there was one more person whom he identified in court as Shakur. Consequently, we allow the two appeals by setting aside the impugned judgment of the High Court dated 26.08.2011 and of the trial court dated 10.03.2003. Conviction and sentence of the appellants are accordingly set aside. Sections: 302 IPC, 148 IPC, 149 IPC, 147 IPC, 307 IPC, 313 CrPC, 27 Evidence Act.",
+    "label": null,
+    "category": "Criminal",
+    "outcome": "Acquitted",
+    "sections": "302 IPC, 148 IPC, 149 IPC, 147 IPC, 307 IPC, 313 CrPC, 27 Evidence Act"
+  },
+  {
+    "case_id": "2025 INSC 158",
+    "input_text": "The appellant, who was working abroad lost his employment and returned to his family, comprising of his wife and three children. Unable to get any employment, he took to the bottle and perpetrated continuous harassment on his wife and children. The doctor who examined both the injured, before court, spoke of the grievous injuries suffered by the mother-in-law but has categorically stated in the chief examination itself that the injuries sustained by the wife of the appellant were simple injuries and the wound certificate issued to the contrary was a mistake. The Trial Court having imposed life imprisonment, the Appellate Court modified it and converted it to 12 years RI. Accordingly, we modify sentence in the Appellate judgment under Section 307, as above. Sections: 498A IPC, 294(b) IPC, 307 IPC, 506(II) IPC, 324 IPC.",
+    "label": null,
+    "category": "Criminal",
+    "outcome": "Partly Allowed",
+    "sections": "498A IPC, 294(b) IPC, 307 IPC, 506(II) IPC, 324 IPC"
+  },
+  {
+    "case_id": "2024 INSC 995",
+    "input_text": "The Appellant herein has approached this Court seeking bail during the pendency of trial after dismissal of his bail application by the High Court of Patna vide impugned Order dated 28.11.2023 in Criminal Appeal (DB) No.516 of 2023. The Appellant is booked as Accused No.01 in FIR No. A reference in this regard may be made to the judgment of this Court in Union of India v. It requires mention that in that case this Court considered the factum that there were 276 witnesses left to be examined which would lead to a prolong trial resulting in no possibility of the trial coming to an end at an early date resulting in suffering of incarceration for a significant period of time by an accused, making it an obligation on the Court on such consideration to enlarge such an accused on bail. The Appeal is accordingly allowed with a direction that the Appellant be enlarged on bail on the appropriate terms and conditions to be fixed by the Special Court. Pending applications if any stand disposed of. Sections: 120 IPC, 121 IPC, 121A IPC, 122 IPC, 153A IPC, 153B IPC.",
+    "label": 1,
+    "category": "Criminal",
+    "outcome": "Allowed",
+    "sections": "120 IPC, 121 IPC, 121A IPC, 122 IPC, 153A IPC, 153B IPC"
   }
 ]
