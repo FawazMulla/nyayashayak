@@ -1,1 +1,20 @@
+# Environment
 .env
+.env.*
+
+# Django
+db.sqlite3
+*.log
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Media uploads (user-uploaded files)
+media/
+
+# ML model weights & artifacts
+models/InLegalBERT/pytorch_model.bin
+data/embeddings.npy
+data/embeddings_meta.npy
+data/model.pkl
