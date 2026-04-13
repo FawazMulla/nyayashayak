@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,174 +9,24 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Inconsolata:wght@600&display=swap" rel="stylesheet"/>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --neon:#faff69; --neon-pale:#f4f692; --green:#166534; --green-dark:#14572f;
-      --olive:#4f5100; --black:#000; --near-black:#141414; --charcoal:rgba(65,65,65,0.8);
-      --deep:#343434; --hover:#3a3a3a; --white:#fff; --silver:#a0a0a0;
-    }
-    html { height:100%; }
-    body { height:100%; background:var(--black); color:var(--white); font-family:'Inter',sans-serif; display:flex; flex-direction:column; overflow:hidden; }
-
-    /* NAV */
-    nav { flex-shrink:0; display:flex; align-items:center; justify-content:space-between; padding:0 20px; height:44px; border-bottom:1px solid var(--charcoal); background:var(--black); }
-    .nav-logo { font-size:13px; font-weight:900; color:var(--white); text-decoration:none; display:flex; align-items:center; gap:7px; }
-    .nav-logo .dot { width:7px; height:7px; background:var(--neon); border-radius:50%; }
-    .nav-right { display:flex; align-items:center; gap:8px; }
-    .status-pill { display:flex; align-items:center; gap:5px; font-size:11px; font-weight:600; color:var(--silver); }
-    .status-pill::before { content:''; width:6px; height:6px; background:#4ade80; border-radius:50%; }
-    .btn-back { background:var(--near-black); border:1px solid var(--charcoal); border-radius:4px; color:var(--white); font-family:'Inter',sans-serif; font-size:11px; font-weight:600; padding:5px 12px; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:5px; transition:background .15s; }
-    .btn-back:hover { background:var(--hover); color:var(--white); }
-
-    /* TOP BAR */
-    .top-bar { flex-shrink:0; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px; padding:7px 20px; border-bottom:1px solid var(--charcoal); background:var(--near-black); }
-    .top-bar-title { font-size:13px; font-weight:900; }
-    .top-bar-meta { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
-    .tag { font-size:10px; font-weight:600; padding:2px 8px; border-radius:9999px; border:1px solid; display:inline-flex; align-items:center; gap:3px; }
-    .tag-purple { border-color:#6d28d9; color:#c4b5fd; background:rgba(109,40,217,0.1); }
-    .tag-yellow { border-color:var(--olive); color:var(--neon); background:rgba(250,255,105,0.06); }
-    .tag-green  { border-color:var(--green-dark); color:#86efac; background:rgba(22,101,52,0.1); }
-    .tag-muted  { border-color:var(--deep); color:var(--silver); }
-
-    /* DASHBOARD */
-    .dashboard { flex:1; display:grid; grid-template-columns:1fr 340px; min-height:0; overflow:hidden; }
-
-    /* LEFT — scrolls independently */
-    .left-col { overflow-y:auto; overflow-x:hidden; padding:12px; display:flex; flex-direction:column; gap:8px; border-right:1px solid var(--charcoal); min-height:0; }
-    .left-col::-webkit-scrollbar { width:4px; }
-    .left-col::-webkit-scrollbar-track { background:transparent; }
-    .left-col::-webkit-scrollbar-thumb { background:var(--deep); border-radius:2px; }
-
-    /* BLOCK */
-    .block { border:1px solid var(--charcoal); border-radius:6px; overflow:visible; flex-shrink:0; }
-    .block-head { padding:7px 12px; background:rgba(20,20,20,0.95); border-bottom:1px solid var(--charcoal); display:flex; align-items:center; gap:6px; cursor:pointer; user-select:none; transition:background .15s; border-radius:6px 6px 0 0; }
-    .block.collapsed .block-head { border-bottom:none; border-radius:6px; }
-    .block-head:hover { background:var(--hover); }
-    .block-head i.icon { color:var(--neon); font-size:11px; flex-shrink:0; }
-    .block-head-title { font-size:10px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase; color:var(--white); flex:1; min-width:0; }
-    .block-head .tag { margin-left:auto; flex-shrink:0; }
-    .chevron { font-size:10px; color:var(--silver); margin-left:6px; transition:transform .2s; flex-shrink:0; }
-    .block.collapsed .chevron { transform:rotate(-90deg); }
-    .block-body { padding:12px; }
-    .block.collapsed .block-body { display:none; }
-
-    /* SUMMARY */
-    .summary-text { font-size:12px; color:var(--silver); line-height:1.7; }
-    .text-box { background:var(--black); border:1px solid var(--charcoal); border-radius:4px; padding:10px 12px; font-size:12px; color:var(--silver); line-height:1.6; max-height:120px; overflow-y:auto; font-family:'Inconsolata',monospace; }
-
-    /* INFO GRID — 2 cols, values wrap properly */
-    .info-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
-    .info-item { background:var(--black); border:1px solid var(--charcoal); border-radius:4px; padding:8px 10px; min-width:0; }
-    .info-item.s2 { grid-column:span 2; }
-    .info-item.s4 { grid-column:span 2; }
-    .info-label { font-size:9px; font-weight:600; letter-spacing:1.2px; text-transform:uppercase; color:var(--silver); margin-bottom:3px; }
-    .info-value { font-size:12px; font-weight:600; color:var(--white); word-break:break-word; white-space:normal; line-height:1.4; }
-    .badge-cat { background:rgba(29,78,216,0.15); border:1px solid rgba(29,78,216,0.4); color:#93c5fd; font-size:10px; font-weight:600; padding:1px 7px; border-radius:4px; }
-
-    /* ML */
-    .ml-row { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:8px; }
-    .ml-stat { background:var(--black); border:1px solid var(--charcoal); border-radius:4px; padding:8px 10px; }
-    .ml-stat-label { font-size:9px; font-weight:600; letter-spacing:1.2px; text-transform:uppercase; color:var(--silver); margin-bottom:3px; }
-    .ml-stat-value { font-size:13px; font-weight:700; color:var(--white); }
-    .ml-stat-value.neon { color:var(--neon); }
-    .conf-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; }
-    .conf-label { font-size:9px; font-weight:600; letter-spacing:1.2px; text-transform:uppercase; color:var(--silver); }
-    .conf-val { font-size:12px; font-weight:700; color:var(--neon); }
-    .conf-track { background:var(--deep); border-radius:9999px; height:4px; }
-    .conf-fill { background:var(--neon); border-radius:9999px; height:4px; width:0%; transition:width 1s ease; }
-    .ml-note { font-size:10px; color:#585858; margin-top:8px; font-family:'Inconsolata',monospace; line-height:1.5; }
-    .ml-note code { color:var(--silver); }
-
-    /* BOTTOM ROW — stacked to prevent overflow */
-    .bottom-row { display:flex; flex-direction:column; gap:8px; }
-
-    /* SIMILAR */
-    .similar-item { background:var(--black); border:1px solid var(--charcoal); border-radius:4px; padding:8px 10px; margin-bottom:6px; }
-    .similar-item:last-child { margin-bottom:0; }
-    .similar-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
-    .similar-num { font-size:9px; font-weight:600; letter-spacing:1.2px; text-transform:uppercase; color:var(--silver); }
-    .similar-score { font-size:10px; font-weight:700; color:var(--neon); background:rgba(250,255,105,0.08); border:1px solid var(--olive); padding:1px 8px; border-radius:9999px; }
-    .similar-text { font-size:11px; color:var(--silver); line-height:1.5; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-    .placeholder-block { text-align:center; padding:20px; }
-    .placeholder-block i { font-size:1.4rem; color:var(--deep); margin-bottom:8px; display:block; }
-    .placeholder-block p { font-size:11px; color:var(--silver); }
-    .placeholder-block code { color:var(--neon); font-family:'Inconsolata',monospace; }
-
-    /* SYS INFO */
-    .sys-text { font-size:11px; color:var(--silver); line-height:1.6; margin-bottom:8px; }
-    .sys-text code { color:var(--neon); font-family:'Inconsolata',monospace; }
-    .tech-tags { display:flex; flex-wrap:wrap; gap:4px; }
-    .tech-tag { background:var(--black); border:1px solid var(--charcoal); border-radius:4px; font-size:10px; font-weight:600; color:var(--silver); padding:3px 8px; }
-
-    /* MODAL */
-    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:500; align-items:center; justify-content:center; padding:20px; }
-    .modal-overlay.open { display:flex; }
-    .modal { background:var(--near-black); border:1px solid var(--charcoal); border-radius:8px; width:100%; max-width:640px; max-height:80vh; display:flex; flex-direction:column; }
-    .modal-head { padding:12px 16px; border-bottom:1px solid var(--charcoal); display:flex; align-items:center; justify-content:space-between; }
-    .modal-head-title { font-size:12px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; color:var(--white); display:flex; align-items:center; gap:6px; }
-    .modal-head-title i { color:var(--neon); }
-    .modal-close { background:transparent; border:none; color:var(--silver); font-size:16px; cursor:pointer; padding:2px 6px; border-radius:4px; transition:color .15s; }
-    .modal-close:hover { color:var(--white); }
-    .modal-body { padding:16px; overflow-y:auto; flex:1; }
-    .modal-body::-webkit-scrollbar { width:3px; }
-    .modal-body::-webkit-scrollbar-thumb { background:var(--deep); border-radius:2px; }
-    .modal-info-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-    .modal-info-item { background:var(--black); border:1px solid var(--charcoal); border-radius:4px; padding:10px 12px; }
-    .modal-info-item.full { grid-column:1/-1; }
-    .modal-label { font-size:10px; font-weight:600; letter-spacing:1.2px; text-transform:uppercase; color:var(--silver); margin-bottom:4px; }
-    .modal-value { font-size:13px; font-weight:500; color:var(--white); line-height:1.5; word-break:break-word; }
-    .modal-text { font-size:13px; color:var(--silver); line-height:1.8; }
-    .modal-similar-item { background:var(--black); border:1px solid var(--charcoal); border-radius:4px; padding:10px 12px; margin-bottom:8px; }
-    .modal-similar-item:last-child { margin-bottom:0; }
-    .modal-similar-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
-
-    /* RIGHT — CHATBOT — sticky, never scrolls with page */
-    .right-col { display:flex; flex-direction:column; overflow:hidden; min-height:0; position:sticky; top:0; height:calc(100vh - 44px - 37px); }
-    .chat-header { flex-shrink:0; padding:10px 14px; background:var(--near-black); border-bottom:1px solid var(--charcoal); display:flex; align-items:center; justify-content:space-between; }
-    .chat-header h3 { font-size:12px; font-weight:700; color:var(--white); margin-bottom:1px; }
-    .chat-header p { font-size:10px; color:var(--silver); }
-    .chat-online { display:flex; align-items:center; gap:4px; font-size:10px; font-weight:600; color:var(--silver); }
-    .chat-online::before { content:''; width:5px; height:5px; background:#4ade80; border-radius:50%; }
-    .chat-quick { flex-shrink:0; padding:7px 10px; background:var(--near-black); border-bottom:1px solid var(--charcoal); display:flex; flex-wrap:wrap; gap:5px; }
-    .qbtn { background:transparent; border:1px solid var(--charcoal); border-radius:4px; color:var(--silver); font-family:'Inter',sans-serif; font-size:11px; font-weight:600; padding:4px 9px; cursor:pointer; transition:border-color .15s,color .15s; }
-    .qbtn:hover { border-color:var(--neon); color:var(--neon); }
-    .chat-messages { flex:1; overflow-y:auto; padding:10px; background:var(--black); display:flex; flex-direction:column; gap:7px; min-height:0; }
-    .chat-messages::-webkit-scrollbar { width:3px; }
-    .chat-messages::-webkit-scrollbar-thumb { background:var(--deep); border-radius:2px; }
-    .msg-row { display:flex; }
-    .msg-row.user { justify-content:flex-end; }
-    .msg-bubble { max-width:84%; padding:8px 11px; border-radius:8px; font-size:12px; line-height:1.6; white-space:pre-wrap; word-break:break-word; }
-    .msg-bubble.bot { background:var(--near-black); border:1px solid var(--charcoal); color:var(--white); border-bottom-left-radius:2px; }
-    .msg-bubble.user { background:var(--green); color:var(--white); border-bottom-right-radius:2px; }
-    .typing-dot { display:inline-block; width:5px; height:5px; border-radius:50%; background:var(--silver); animation:blink 1.2s infinite; }
-    .typing-dot:nth-child(2){animation-delay:.2s}.typing-dot:nth-child(3){animation-delay:.4s}
-    @keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
-    .chat-input-row { flex-shrink:0; padding:9px 10px; background:var(--near-black); border-top:1px solid var(--charcoal); display:flex; gap:6px; }
-    .chat-input { flex:1; background:var(--black); border:1px solid var(--charcoal); border-radius:4px; color:var(--white); font-family:'Inter',sans-serif; font-size:12px; padding:7px 10px; outline:none; transition:border-color .15s; }
-    .chat-input:focus { border-color:var(--neon); }
-    .chat-input::placeholder { color:var(--silver); }
-    .btn-send { background:var(--neon); border:none; border-radius:4px; color:var(--near-black); font-size:13px; padding:7px 11px; cursor:pointer; transition:background .15s; }
-    .btn-send:hover { background:var(--neon-pale); }
-
-    @media(max-width:860px){
-      html,body{overflow:auto;height:auto;}
-      .dashboard{grid-template-columns:1fr;height:auto;overflow:visible;}
-      .left-col{overflow:visible;height:auto;}
-      .right-col{height:500px;position:static;}
-    }
-  </style>
+  <link rel="stylesheet" href="{% static 'css/base.css' %}"/>
+  <link rel="stylesheet" href="{% static 'css/result.css' %}"/>
 </head>
 <body>
 
-<nav>
+<!-- NAV -->
+<nav class="nav">
   <a class="nav-logo" href="/"><span class="dot"></span>Nyaya Sahayak</a>
+  <div class="nav-links">
+    <a class="nav-link" href="/"><i class="bi bi-upload"></i> Analyze</a>
+    <a class="nav-link" href="/chat/"><i class="bi bi-chat-dots"></i> Lincoln Lawyer</a>
+  </div>
   <div class="nav-right">
-    <span class="status-pill">Analysis Complete</span>
-    <a href="/" class="btn-back"><i class="bi bi-arrow-left"></i> New Analysis</a>
+    <a href="/" class="btn btn-back"><i class="bi bi-arrow-left"></i> New Analysis</a>
   </div>
 </nav>
 
+<!-- TOP BAR -->
 <div class="top-bar">
   <span class="top-bar-title">Case Analysis Report</span>
   <div class="top-bar-meta">
@@ -190,9 +41,10 @@
   </div>
 </div>
 
+<!-- DASHBOARD -->
 <div class="dashboard">
 
-  <!-- LEFT COLUMN -->
+  <!-- LEFT: DATA PANELS -->
   <div class="left-col">
 
     <!-- CASE SUMMARY -->
@@ -202,6 +54,9 @@
         <span class="block-head-title">{% if result.ai_summary %}AI Summary{% else %}Case Summary{% endif %}</span>
         {% if result.ai_summary %}<span class="tag tag-purple"><i class="bi bi-stars"></i> Cohere</span>
         {% else %}<span class="tag tag-muted">Rule-based</span>{% endif %}
+        <button class="btn btn-ghost" onclick="event.stopPropagation();openModal('modal-summary')" style="margin-left:6px;">
+          <i class="bi bi-arrows-fullscreen"></i> View Full
+        </button>
         <i class="bi bi-chevron-down chevron"></i>
       </div>
       <div class="block-body">
@@ -210,9 +65,6 @@
         {% else %}
           <div class="text-box">{{ result.input_text|default:"No text extracted." }}</div>
         {% endif %}
-        <button class="expand-btn" onclick="openModal('modal-summary')" style="margin-top:8px;background:transparent;border:1px solid var(--charcoal);border-radius:4px;color:var(--silver);font-family:'Inter',sans-serif;font-size:10px;font-weight:600;padding:4px 10px;cursor:pointer;transition:border-color .15s,color .15s;" onmouseover="this.style.borderColor='var(--neon)';this.style.color='var(--neon)'" onmouseout="this.style.borderColor='var(--charcoal)';this.style.color='var(--silver)'">
-          <i class="bi bi-arrows-fullscreen" style="margin-right:4px;"></i>View Full
-        </button>
       </div>
     </div>
 
@@ -221,7 +73,7 @@
       <div class="block-head" onclick="toggleBlock('block-info')">
         <i class="bi bi-search icon"></i>
         <span class="block-head-title">Extracted Information</span>
-        <button onclick="event.stopPropagation();openModal('modal-info')" style="margin-left:auto;background:transparent;border:1px solid var(--charcoal);border-radius:4px;color:var(--silver);font-family:'Inter',sans-serif;font-size:10px;font-weight:600;padding:3px 8px;cursor:pointer;transition:border-color .15s,color .15s;" onmouseover="this.style.borderColor='var(--neon)';this.style.color='var(--neon)'" onmouseout="this.style.borderColor='var(--charcoal)';this.style.color='var(--silver)'">
+        <button class="btn btn-ghost" onclick="event.stopPropagation();openModal('modal-info')" style="margin-left:auto;">
           <i class="bi bi-arrows-fullscreen"></i>
         </button>
         <i class="bi bi-chevron-down chevron"></i>
@@ -229,12 +81,12 @@
       <div class="block-body">
         <div class="info-grid">
           <div class="info-item"><div class="info-label">Case ID</div><div class="info-value">{{ result.case_id|default:"N/A" }}</div></div>
-          <div class="info-item"><div class="info-label">Case Number</div><div class="info-value">{{ result.case_number|default:"N/A" }}</div></div>
           <div class="info-item"><div class="info-label">Date</div><div class="info-value">{{ result.judgment_date|default:"N/A" }}</div></div>
           <div class="info-item"><div class="info-label">Words</div><div class="info-value">{{ result.word_count|default:"0" }}</div></div>
+          <div class="info-item"><div class="info-label">Category</div><div class="info-value"><span class="badge-cat">{{ result.category|default:"Unknown" }}</span></div></div>
           <div class="info-item s2"><div class="info-label">Appellant</div><div class="info-value">{{ result.appellant|default:"N/A" }}</div></div>
           <div class="info-item s2"><div class="info-label">Respondent</div><div class="info-value">{{ result.respondent|default:"N/A" }}</div></div>
-          <div class="info-item s2"><div class="info-label">Category</div><div class="info-value"><span class="badge-cat">{{ result.category|default:"Unknown" }}</span></div></div>
+          <div class="info-item s2"><div class="info-label">Case Number</div><div class="info-value">{{ result.case_number|default:"N/A" }}</div></div>
           <div class="info-item s2"><div class="info-label">Outcome</div><div class="info-value">{{ result.outcome|default:"N/A" }}</div></div>
         </div>
       </div>
@@ -267,98 +119,94 @@
           <span class="conf-val">{{ result.confidence }}</span>
         </div>
         <div class="conf-track"><div class="conf-fill" id="conf-bar"></div></div>
-        <p class="ml-note">{% if result.label_source == "ml_model" %}LogReg on InLegalBERT embeddings · Supreme Court training data.{% else %}ML not trained. Run <code>python manage.py build_ml</code> to enable.{% endif %}</p>
+        <p class="ml-note">
+          {% if result.label_source == "ml_model" %}LogReg on InLegalBERT embeddings · Supreme Court training data.
+          {% else %}ML not trained. Run <code>python manage.py build_ml</code> to enable.{% endif %}
+        </p>
       </div>
     </div>
 
-    <!-- BOTTOM ROW: SIMILAR + SYSTEM -->
-    <div class="bottom-row">
-
-      <div class="block" id="block-similar">
-        <div class="block-head" onclick="toggleBlock('block-similar')">
-          <i class="bi bi-diagram-2 icon"></i>
-          <span class="block-head-title">Similar Cases</span>
-          {% if result.similar_cases %}
-          <button onclick="event.stopPropagation();openModal('modal-similar')" style="margin-left:auto;background:transparent;border:1px solid var(--charcoal);border-radius:4px;color:var(--silver);font-family:'Inter',sans-serif;font-size:10px;font-weight:600;padding:3px 8px;cursor:pointer;transition:border-color .15s,color .15s;" onmouseover="this.style.borderColor='var(--neon)';this.style.color='var(--neon)'" onmouseout="this.style.borderColor='var(--charcoal)';this.style.color='var(--silver)'">
-            <i class="bi bi-arrows-fullscreen"></i>
-          </button>
-          {% endif %}
-          <i class="bi bi-chevron-down chevron"></i>
-        </div>
-        <div class="block-body">
-          {% if result.similar_cases %}
-            {% for case in result.similar_cases|slice:":3" %}
-            <div class="similar-item">
-              <div class="similar-top">
-                <span class="similar-num">Case {{ forloop.counter }}</span>
-                <span class="similar-score">{{ case.score }}%</span>
-              </div>
-              <p class="similar-text">{{ case.text }}</p>
-            </div>
-            {% endfor %}
-          {% else %}
-            <div class="placeholder-block">
-              <i class="bi bi-diagram-2"></i>
-              <p>Run <code>build_ml</code> to enable.</p>
-            </div>
-          {% endif %}
-        </div>
+    <!-- SIMILAR CASES -->
+    <div class="block" id="block-similar">
+      <div class="block-head" onclick="toggleBlock('block-similar')">
+        <i class="bi bi-diagram-2 icon"></i>
+        <span class="block-head-title">Similar Cases</span>
+        <span style="font-size:10px;color:var(--silver);margin-left:4px;">cosine · InLegalBERT</span>
+        {% if result.similar_cases %}
+        <button class="btn btn-ghost" onclick="event.stopPropagation();openModal('modal-similar')" style="margin-left:auto;">
+          <i class="bi bi-arrows-fullscreen"></i> All
+        </button>
+        {% endif %}
+        <i class="bi bi-chevron-down chevron"></i>
       </div>
-
-      <div class="block" id="block-sys">
-        <div class="block-head" onclick="toggleBlock('block-sys')">
-          <i class="bi bi-info-circle icon"></i>
-          <span class="block-head-title">System Info</span>
-          <i class="bi bi-chevron-down chevron"></i>
-        </div>
-        <div class="block-body">
-          <p class="sys-text">Hybrid pipeline: rule-based extractor → sanity check → Cohere AI correction. Data stored to <code>data/processed.csv</code>.</p>
-          <div class="tech-tags">
-            <span class="tech-tag">v1.0</span>
-            <span class="tech-tag">Django 6</span>
-            <span class="tech-tag">InLegalBERT</span>
-            <span class="tech-tag">scikit-learn</span>
-            <span class="tech-tag">Cohere</span>
+      <div class="block-body">
+        {% if result.similar_cases %}
+          {% for case in result.similar_cases|slice:":3" %}
+          <div class="similar-item">
+            <div class="similar-top">
+              <span class="similar-num">Case {{ forloop.counter }}</span>
+              <span class="similar-score">{{ case.score }}%</span>
+            </div>
+            <p class="similar-text">{{ case.text }}</p>
           </div>
+          {% endfor %}
+        {% else %}
+          <div class="placeholder-block">
+            <i class="bi bi-diagram-2"></i>
+            <p>Run <code>python manage.py build_ml</code> to enable similarity search.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- SYSTEM INFO -->
+    <div class="block" id="block-sys">
+      <div class="block-head" onclick="toggleBlock('block-sys')">
+        <i class="bi bi-info-circle icon"></i>
+        <span class="block-head-title">System Info</span>
+        <i class="bi bi-chevron-down chevron"></i>
+      </div>
+      <div class="block-body">
+        <p class="sys-text">Hybrid pipeline: rule-based extractor → sanity check → Cohere AI correction. Data stored to <code>data/processed.csv</code>.</p>
+        <div class="tech-tags">
+          <span class="tech-tag">v1.0</span>
+          <span class="tech-tag">Django 6</span>
+          <span class="tech-tag">InLegalBERT</span>
+          <span class="tech-tag">scikit-learn</span>
+          <span class="tech-tag">Cohere</span>
         </div>
       </div>
-
     </div>
+
   </div><!-- /left-col -->
 
   <!-- RIGHT: CHATBOT -->
   <div class="right-col">
     <div class="chat-header">
       <div>
-        <h3><i class="bi bi-chat-dots" style="color:var(--neon);margin-right:5px;"></i>AI Legal Assistant</h3>
-        <p>Ask anything about this case · Cohere</p>
+        <h3><i class="bi bi-scales" style="color:var(--neon);margin-right:5px;"></i>Lincoln Lawyer</h3>
+        <p>AI Legal Assistant · Ask about this case</p>
       </div>
       <span class="chat-online">Online</span>
     </div>
     <div class="chat-quick">
-      <button class="qbtn" onclick="quickAction('explain')"><i class="bi bi-lightbulb"></i> Explain</button>
-      <button class="qbtn" onclick="quickAction('nextsteps')"><i class="bi bi-arrow-right-circle"></i> Next Steps</button>
-      <button class="qbtn" onclick="quickAction('risk')"><i class="bi bi-exclamation-triangle"></i> Risk</button>
-      <button class="qbtn" onclick="quickAction('arguments')"><i class="bi bi-chat-square-quote"></i> Arguments</button>
-      <button class="qbtn" onclick="quickAction('compare')"><i class="bi bi-diagram-2"></i> Compare</button>
-      <button class="qbtn" onclick="quickAction('eli5')"><i class="bi bi-emoji-smile"></i> ELI5</button>
+      <button class="qbtn" onclick="Chatbot.quickAction('explain')"><i class="bi bi-lightbulb"></i> Explain</button>
+      <button class="qbtn" onclick="Chatbot.quickAction('nextsteps')"><i class="bi bi-arrow-right-circle"></i> Next Steps</button>
+      <button class="qbtn" onclick="Chatbot.quickAction('risk')"><i class="bi bi-exclamation-triangle"></i> Risk</button>
+      <button class="qbtn" onclick="Chatbot.quickAction('arguments')"><i class="bi bi-chat-square-quote"></i> Arguments</button>
+      <button class="qbtn" onclick="Chatbot.quickAction('compare')"><i class="bi bi-diagram-2"></i> Compare</button>
+      <button class="qbtn" onclick="Chatbot.quickAction('eli5')"><i class="bi bi-emoji-smile"></i> ELI5</button>
     </div>
-    <div id="chat-messages" class="chat-messages">
-      <div class="msg-row">
-        <div class="msg-bubble bot">👋 I'm your AI Legal Assistant. Ask me anything about this case — judgment explanation, next steps, risk analysis, or legal arguments.</div>
-      </div>
-    </div>
+    <div id="chat-messages" class="chat-messages"></div>
     <div class="chat-input-row">
-      <input type="text" id="chatInput" class="chat-input" placeholder="Ask about this case…" onkeydown="if(event.key==='Enter')sendMessage()"/>
-      <button onclick="sendMessage()" class="btn-send"><i class="bi bi-send-fill"></i></button>
+      <input type="text" id="chatInput" class="chat-input" placeholder="Ask about this case…"/>
+      <button class="btn-send" onclick="Chatbot.send('chatInput')"><i class="bi bi-send-fill"></i></button>
     </div>
   </div>
 
 </div><!-- /dashboard -->
 
-<!-- MODALS -->
-
-<!-- Summary Modal -->
+<!-- MODAL: Summary -->
 <div class="modal-overlay" id="modal-summary" onclick="closeModalOutside(event,'modal-summary')">
   <div class="modal">
     <div class="modal-head">
@@ -375,7 +223,7 @@
   </div>
 </div>
 
-<!-- Info Modal -->
+<!-- MODAL: Extracted Info -->
 <div class="modal-overlay" id="modal-info" onclick="closeModalOutside(event,'modal-info')">
   <div class="modal">
     <div class="modal-head">
@@ -383,24 +231,24 @@
       <button class="modal-close" onclick="closeModal('modal-info')"><i class="bi bi-x-lg"></i></button>
     </div>
     <div class="modal-body">
-      <div class="modal-info-grid">
-        <div class="modal-info-item"><div class="modal-label">Case ID</div><div class="modal-value">{{ result.case_id|default:"N/A" }}</div></div>
-        <div class="modal-info-item"><div class="modal-label">Case Number</div><div class="modal-value">{{ result.case_number|default:"N/A" }}</div></div>
-        <div class="modal-info-item"><div class="modal-label">Judgment Date</div><div class="modal-value">{{ result.judgment_date|default:"N/A" }}</div></div>
-        <div class="modal-info-item"><div class="modal-label">Word Count</div><div class="modal-value">{{ result.word_count|default:"0" }} words</div></div>
-        <div class="modal-info-item full"><div class="modal-label">Appellant</div><div class="modal-value">{{ result.appellant|default:"N/A" }}</div></div>
-        <div class="modal-info-item full"><div class="modal-label">Respondent</div><div class="modal-value">{{ result.respondent|default:"N/A" }}</div></div>
-        <div class="modal-info-item"><div class="modal-label">Category</div><div class="modal-value"><span class="badge-cat">{{ result.category|default:"Unknown" }}</span></div></div>
-        <div class="modal-info-item"><div class="modal-label">Outcome</div><div class="modal-value">{{ result.outcome|default:"N/A" }}</div></div>
+      <div class="modal-grid">
+        <div class="modal-item"><div class="modal-label">Case ID</div><div class="modal-value">{{ result.case_id|default:"N/A" }}</div></div>
+        <div class="modal-item"><div class="modal-label">Case Number</div><div class="modal-value">{{ result.case_number|default:"N/A" }}</div></div>
+        <div class="modal-item"><div class="modal-label">Judgment Date</div><div class="modal-value">{{ result.judgment_date|default:"N/A" }}</div></div>
+        <div class="modal-item"><div class="modal-label">Word Count</div><div class="modal-value">{{ result.word_count|default:"0" }} words</div></div>
+        <div class="modal-item full"><div class="modal-label">Appellant</div><div class="modal-value">{{ result.appellant|default:"N/A" }}</div></div>
+        <div class="modal-item full"><div class="modal-label">Respondent</div><div class="modal-value">{{ result.respondent|default:"N/A" }}</div></div>
+        <div class="modal-item"><div class="modal-label">Category</div><div class="modal-value"><span class="badge-cat">{{ result.category|default:"Unknown" }}</span></div></div>
+        <div class="modal-item"><div class="modal-label">Outcome</div><div class="modal-value">{{ result.outcome|default:"N/A" }}</div></div>
         {% if result.sections %}
-        <div class="modal-info-item full"><div class="modal-label">Legal Sections Cited</div><div class="modal-value" style="font-size:12px;color:var(--silver);">{{ result.sections }}</div></div>
+        <div class="modal-item full"><div class="modal-label">Legal Sections Cited</div><div class="modal-value" style="font-size:12px;color:var(--silver);">{{ result.sections }}</div></div>
         {% endif %}
       </div>
     </div>
   </div>
 </div>
 
-<!-- Similar Cases Modal -->
+<!-- MODAL: Similar Cases -->
 <div class="modal-overlay" id="modal-similar" onclick="closeModalOutside(event,'modal-similar')">
   <div class="modal">
     <div class="modal-head">
@@ -410,8 +258,8 @@
     <div class="modal-body">
       {% if result.similar_cases %}
         {% for case in result.similar_cases %}
-        <div class="modal-similar-item">
-          <div class="modal-similar-top">
+        <div style="background:var(--black);border:1px solid var(--charcoal);border-radius:4px;padding:12px;margin-bottom:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
             <span class="similar-num">Case {{ forloop.counter }}</span>
             <span class="similar-score">{{ case.score }}% match</span>
           </div>
@@ -419,57 +267,22 @@
         </div>
         {% endfor %}
       {% else %}
-        <p style="font-size:13px;color:var(--silver);">No similar cases found. Run <code style="color:var(--neon);font-family:'Inconsolata',monospace;">python manage.py build_ml</code> to build embeddings.</p>
+        <p style="font-size:13px;color:var(--silver);">No similar cases. Run <code style="color:var(--neon);font-family:'Inconsolata',monospace;">python manage.py build_ml</code>.</p>
       {% endif %}
     </div>
   </div>
 </div>
 
 <script>
-  /* confidence bar */
-  setTimeout(() => { document.getElementById('conf-bar').style.width = (parseInt("{{ result.confidence }}") || 0) + '%'; }, 300);
-
-  /* collapse/expand blocks */
-  function toggleBlock(id) {
-    document.getElementById(id).classList.toggle('collapsed');
-  }
-
-  /* modals */
-  function openModal(id) { document.getElementById(id).classList.add('open'); }
-  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-  function closeModalOutside(e, id) { if (e.target.id === id) closeModal(id); }
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open')); });
-
-  /* chatbot */
-  const messages = document.getElementById('chat-messages');
-  const csrfToken = '{{ csrf_token }}';
-  const scrollBottom = () => { messages.scrollTop = messages.scrollHeight; };
-
-  function appendMsg(text, role) {
-    const wrap = document.createElement('div'); wrap.className = 'msg-row' + (role === 'user' ? ' user' : '');
-    const bubble = document.createElement('div'); bubble.className = 'msg-bubble ' + role; bubble.textContent = text;
-    wrap.appendChild(bubble); messages.appendChild(wrap); scrollBottom();
-  }
-  function showTyping() {
-    const wrap = document.createElement('div'); wrap.className = 'msg-row'; wrap.id = 'typing-indicator';
-    wrap.innerHTML = '<div class="msg-bubble bot"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div>';
-    messages.appendChild(wrap); scrollBottom();
-  }
-  function removeTyping() { const t = document.getElementById('typing-indicator'); if (t) t.remove(); }
-  function postToBot(query, action) {
-    showTyping();
-    fetch('/chatbot/', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded','X-CSRFToken':csrfToken}, body:'query='+encodeURIComponent(query)+'&action='+encodeURIComponent(action) })
-    .then(r => r.json()).then(d => { removeTyping(); appendMsg(d.response, 'bot'); })
-    .catch(() => { removeTyping(); appendMsg('Network error — please try again.', 'bot'); });
-  }
-  function sendMessage() {
-    const input = document.getElementById('chatInput'); const q = input.value.trim();
-    if (!q) return; appendMsg(q, 'user'); input.value = ''; postToBot(q, '');
-  }
-  function quickAction(a) {
-    const L = { explain:'Explain this case', nextsteps:'What should I do next?', risk:'Risk analysis', arguments:'Generate arguments', compare:'Compare with similar cases', eli5:"Explain like I'm 5" };
-    appendMsg(L[a] || a, 'user'); postToBot('', a);
-  }
+  window.CSRF_TOKEN   = '{{ csrf_token }}';
+  window.CHATBOT_URL  = '{% url "chatbot" %}';
+  window.CHATBOT_MODE = 'case';
+  window.CONF_PCT     = '{{ result.confidence }}';
+</script>
+<script src="{% static 'js/chatbot.js' %}"></script>
+<script src="{% static 'js/result.js' %}"></script>
+<script>
+  Chatbot.init('👋 I\'m Lincoln Lawyer, your AI Legal Assistant. Ask me anything about this case — judgment explanation, next steps, risk analysis, or legal arguments.');
 </script>
 </body>
 </html>

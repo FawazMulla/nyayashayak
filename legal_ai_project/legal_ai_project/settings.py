@@ -130,9 +130,15 @@ DATA_DIR = BASE_DIR / "data"
 COHERE_API_KEY = os.environ.get("COHERE_API_KEY", "")
 AI_CORRECTION_ENABLED = os.environ.get("AI_CORRECTION_ENABLED", "true").lower() == "true"
 
-# Chatbot — separate Oracle Cloud Cohere key + toggle
-CHATBOT_API_KEY = os.environ.get("CHATBOT_API_KEY", "")
+# Chatbot — OCI Generative AI
 CHATBOT_ENABLED = os.environ.get("CHATBOT_ENABLED", "true").lower() == "true"
+OCI_USER_OCID = os.environ.get("OCI_USER_OCID", "")
+OCI_TENANCY_OCID = os.environ.get("OCI_TENANCY_OCID", "")
+OCI_FINGERPRINT = os.environ.get("OCI_FINGERPRINT", "")
+OCI_PRIVATE_KEY_PATH = os.environ.get("OCI_PRIVATE_KEY_PATH", "")
+OCI_REGION = os.environ.get("OCI_REGION", "us-chicago-1")
+OCI_COMPARTMENT_ID = os.environ.get("OCI_COMPARTMENT_ID", "")
+OCI_CHAT_MODEL_ID = os.environ.get("OCI_CHAT_MODEL_ID", "cohere.command-a-03-2025")
 
 # Sessions
 SESSION_ENGINE = "django.contrib.sessions.backends.db"

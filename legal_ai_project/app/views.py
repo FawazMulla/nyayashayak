@@ -16,6 +16,11 @@ def upload_case(request):
     return render(request, "upload.html")
 
 
+def lincoln_lawyer(request):
+    """Standalone Lincoln Lawyer chatbot — no case upload needed."""
+    return render(request, "chat.html")
+
+
 @require_http_methods(["POST"])
 def analyze_case(request):
     uploaded_file = request.FILES.get("pdf_file")
@@ -153,8 +158,9 @@ def chatbot_api(request):
     """AJAX endpoint — returns JSON chatbot response."""
     user_query = request.POST.get("query", "").strip()
     action     = request.POST.get("action", "").strip()
+    mode       = request.POST.get("mode", "case").strip()   # "case" or "lincoln"
     context    = request.session.get("case_context", {})
 
     from .chatbot.chatbot import generate_chat_response
-    response = generate_chat_response(user_query, context, action)
+    response = generate_chat_response(user_query, context, action, mode)
     return JsonResponse({"response": response})

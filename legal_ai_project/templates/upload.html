@@ -1,157 +1,27 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Nyaya Sahayak — Legal AI</title>
+  <title>Nyaya Sahayak — Analyze Case</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Inconsolata:wght@600&display=swap" rel="stylesheet"/>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --neon: #faff69; --neon-pale: #f4f692; --green: #166534; --green-dark: #14572f;
-      --olive: #4f5100; --black: #000000; --near-black: #141414; --charcoal: rgba(65,65,65,0.8);
-      --deep-charcoal: #343434; --hover-gray: #3a3a3a; --white: #ffffff; --silver: #a0a0a0;
-    }
-    html, body { height: 100%; }
-    body { background: var(--black); color: var(--white); font-family: 'Inter', sans-serif; overflow-x: hidden; }
-
-    /* BG CANVAS */
-    #bg-canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
-
-    /* NAV */
-    nav {
-      position: relative; z-index: 10;
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 40px; height: 56px; border-bottom: 1px solid var(--charcoal);
-      background: rgba(0,0,0,0.7); backdrop-filter: blur(12px);
-    }
-    .nav-logo { font-size: 15px; font-weight: 900; color: var(--white); text-decoration: none; display: flex; align-items: center; gap: 8px; letter-spacing: -0.3px; }
-    .nav-logo .dot { width: 7px; height: 7px; background: var(--neon); border-radius: 50%; animation: pulse 2s ease-in-out infinite; }
-    @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(250,255,105,0.4)} 50%{box-shadow:0 0 0 6px rgba(250,255,105,0)} }
-    .nav-right { display: flex; gap: 8px; align-items: center; }
-    .badge-pill { font-size: 10px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; padding: 3px 10px; border-radius: 9999px; border: 1px solid var(--charcoal); color: var(--silver); }
-    .badge-pill.neon { border-color: var(--olive); color: var(--neon); }
-
-    /* MAIN LAYOUT — two columns */
-    .layout {
-      position: relative; z-index: 1;
-      display: grid; grid-template-columns: 1fr 480px; min-height: calc(100vh - 56px);
-      max-width: 1200px; margin: 0 auto; padding: 0 40px; gap: 60px; align-items: center;
-    }
-    @media(max-width: 900px) { .layout { grid-template-columns: 1fr; padding: 32px 20px; gap: 32px; } }
-
-    /* LEFT — HERO */
-    .hero { padding: 0; }
-    .hero-label {
-      font-size: 11px; font-weight: 600; letter-spacing: 1.4px; text-transform: uppercase;
-      color: var(--silver); margin-bottom: 20px; display: flex; align-items: center; gap: 8px;
-      animation: fadeUp .6s ease both;
-    }
-    .hero-label::before { content: ''; width: 20px; height: 1px; background: var(--neon); }
-    .hero h1 {
-      font-size: clamp(2.8rem, 5vw, 4rem); font-weight: 900; line-height: 1.0;
-      color: var(--white); margin-bottom: 16px;
-      animation: fadeUp .6s .1s ease both;
-    }
-    .hero h1 .accent { color: var(--neon); }
-    .hero p {
-      font-size: 15px; color: var(--silver); line-height: 1.7; max-width: 400px; margin-bottom: 32px;
-      animation: fadeUp .6s .2s ease both;
-    }
-    .hero-stats {
-      display: flex; gap: 32px; animation: fadeUp .6s .3s ease both;
-    }
-    .stat-item { }
-    .stat-num { font-size: 1.75rem; font-weight: 900; color: var(--white); line-height: 1; }
-    .stat-num span { color: var(--neon); }
-    .stat-label { font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--silver); margin-top: 4px; }
-    .pills {
-      display: flex; flex-wrap: wrap; gap: 6px; margin-top: 28px;
-      animation: fadeUp .6s .4s ease both;
-    }
-    .pill { background: var(--near-black); border: 1px solid var(--charcoal); border-radius: 9999px; padding: 5px 12px; font-size: 11px; font-weight: 500; color: var(--silver); display: inline-flex; align-items: center; gap: 5px; }
-    .pill i { color: var(--neon); font-size: 10px; }
-
-    /* RIGHT — FORM PANEL */
-    .form-panel {
-      background: var(--near-black); border: 1px solid var(--charcoal); border-radius: 8px;
-      padding: 28px; animation: fadeUp .6s .15s ease both;
-      box-shadow: 0 0 40px rgba(250,255,105,0.04); overflow: hidden; min-width: 0;
-    }
-    .tabs { display: flex; gap: 3px; margin-bottom: 20px; background: var(--black); border-radius: 6px; padding: 3px; }
-    .tab-btn { flex: 1; background: transparent; border: none; color: var(--silver); font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; padding: 7px 12px; border-radius: 4px; cursor: pointer; transition: all .15s; }
-    .tab-btn.active { background: var(--neon); color: var(--near-black); }
-    .tab-btn:not(.active):hover { color: var(--white); }
-    .tab-pane { display: none; }
-    .tab-pane.active { display: block; }
-
-    .drop-zone {
-      border: 1px dashed var(--deep-charcoal); border-radius: 6px; padding: 28px 16px;
-      text-align: center; cursor: pointer; transition: border-color .15s, background .15s; background: var(--black);
-      overflow: hidden;
-    }
-    .drop-zone:hover, .drop-zone.dragover { border-color: var(--neon); background: rgba(250,255,105,0.03); }
-    .drop-zone i { font-size: 1.6rem; color: var(--neon); margin-bottom: 8px; display: block; }
-    .drop-zone p { font-size: 13px; color: var(--silver); margin: 0; }
-    .drop-zone p strong { color: var(--white); }
-    #file-name { font-size: 12px; color: var(--neon); margin-top: 8px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; padding: 0 4px; }
-
-    textarea {
-      width: 100%; background: var(--black); border: 1px solid var(--charcoal); border-radius: 6px;
-      color: var(--white); font-family: 'Inter', sans-serif; font-size: 13px; line-height: 1.6;
-      padding: 12px 14px; resize: none; outline: none; transition: border-color .15s;
-    }
-    textarea:focus { border-color: var(--neon); }
-    textarea::placeholder { color: var(--silver); }
-
-    .divider {
-      font-size: 10px; font-weight: 600; letter-spacing: 1.4px; text-transform: uppercase;
-      color: #585858; margin: 18px 0 14px; display: flex; align-items: center; gap: 10px;
-    }
-    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--deep-charcoal); }
-
-    .upcoming-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
-    .field-group { display: flex; flex-direction: column; gap: 4px; }
-    .field-label { font-size: 11px; font-weight: 600; color: var(--silver); display: flex; align-items: center; gap: 5px; }
-    .field-label i { color: var(--neon); font-size: 10px; }
-    .upcoming-tag { font-size: 9px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; padding: 1px 6px; border-radius: 9999px; border: 1px solid var(--olive); color: var(--neon); }
-    select, input[type="text"] {
-      background: var(--black); border: 1px solid var(--deep-charcoal); border-radius: 4px;
-      color: #585858; font-family: 'Inter', sans-serif; font-size: 12px; padding: 7px 10px;
-      outline: none; width: 100%; cursor: not-allowed;
-    }
-
-    .btn-analyze {
-      width: 100%; background: var(--green); color: var(--white); border: none;
-      border-radius: 4px; padding: 13px 16px; font-family: 'Inter', sans-serif; font-size: 14px;
-      font-weight: 700; cursor: pointer; transition: background .15s, color .15s;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-    }
-    .btn-analyze:hover { background: var(--hover-gray); }
-    .btn-analyze:active { color: var(--neon-pale); }
-
-    .alert { background: rgba(185,28,28,0.1); border: 1px solid rgba(185,28,28,0.4); border-radius: 6px; padding: 10px 14px; font-size: 12px; color: #fca5a5; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-
-    /* SPINNER */
-    .spinner-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 9999; align-items: center; justify-content: center; flex-direction: column; gap: 14px; }
-    .spinner-overlay.active { display: flex; }
-    .spinner { width: 32px; height: 32px; border: 2px solid var(--deep-charcoal); border-top-color: var(--neon); border-radius: 50%; animation: spin .7s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .spinner-text { font-size: 13px; color: var(--silver); }
-    .spinner-sub { font-size: 11px; color: #585858; font-family: 'Inconsolata', monospace; }
-
-    @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-  </style>
+  <link rel="stylesheet" href="{% static 'css/base.css' %}"/>
+  <link rel="stylesheet" href="{% static 'css/upload.css' %}"/>
 </head>
 <body>
 
 <canvas id="bg-canvas"></canvas>
 
-<nav>
+<nav class="nav">
   <a class="nav-logo" href="/"><span class="dot"></span>Nyaya Sahayak</a>
+  <div class="nav-links">
+    <a class="nav-link active" href="/"><i class="bi bi-upload"></i> Analyze</a>
+    <a class="nav-link" href="/chat/"><i class="bi bi-chat-dots"></i> Lincoln Lawyer</a>
+  </div>
   <div class="nav-right">
     <span class="badge-pill">ML-Powered</span>
     <span class="badge-pill neon"><i class="bi bi-stars"></i> Cohere AI</span>
@@ -166,21 +36,21 @@
 
 <div class="layout">
 
-  <!-- LEFT: HERO -->
-  <div class="hero">
+  <!-- HERO -->
+  <div class="hero fade-up">
     <div class="hero-label">Machine Learning Legal Assistant</div>
     <h1>Analyze Legal<br>Cases <span class="accent">Instantly</span></h1>
     <p>ML models trained on Supreme Court judgments. Hybrid pipeline: rule-based extraction + Cohere AI correction.</p>
     <div class="hero-stats">
-      <div class="stat-item">
+      <div>
         <div class="stat-num">400<span>+</span></div>
         <div class="stat-label">Judgments</div>
       </div>
-      <div class="stat-item">
+      <div>
         <div class="stat-num"><span>#</span>1</div>
         <div class="stat-label">InLegalBERT</div>
       </div>
-      <div class="stat-item">
+      <div>
         <div class="stat-num">2<span>s</span></div>
         <div class="stat-label">Avg. Analysis</div>
       </div>
@@ -194,8 +64,8 @@
     </div>
   </div>
 
-  <!-- RIGHT: FORM -->
-  <div class="form-panel">
+  <!-- FORM PANEL -->
+  <div class="form-panel fade-up" style="animation-delay:.15s">
 
     {% if error %}
     <div class="alert"><i class="bi bi-exclamation-triangle-fill"></i>{{ error }}</div>
@@ -249,7 +119,7 @@
         </div>
       </div>
 
-      <button type="submit" class="btn-analyze" id="submit-btn">
+      <button type="submit" class="btn btn-primary" id="submit-btn">
         <i class="bi bi-lightning-charge-fill"></i> Analyze Case
       </button>
     </form>
@@ -257,104 +127,6 @@
 
 </div>
 
-<script>
-  /* ── BG PARTICLE ANIMATION ─────────────────────────────────────────── */
-  const canvas = document.getElementById('bg-canvas');
-  const ctx = canvas.getContext('2d');
-  let W, H, particles = [];
-
-  function resize() {
-    W = canvas.width = window.innerWidth;
-    H = canvas.height = window.innerHeight;
-  }
-  resize();
-  window.addEventListener('resize', resize);
-
-  function rand(min, max) { return Math.random() * (max - min) + min; }
-
-  class Particle {
-    constructor() { this.reset(true); }
-    reset(init) {
-      this.x = rand(0, W);
-      this.y = init ? rand(0, H) : H + 10;
-      this.r = rand(0.5, 1.8);
-      this.speed = rand(0.15, 0.5);
-      this.opacity = rand(0.08, 0.35);
-      this.drift = rand(-0.15, 0.15);
-      this.color = Math.random() > 0.85 ? '#faff69' : '#ffffff';
-    }
-    update() {
-      this.y -= this.speed;
-      this.x += this.drift;
-      if (this.y < -5) this.reset(false);
-    }
-    draw() {
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
-      ctx.fillStyle = this.color;
-      ctx.globalAlpha = this.opacity;
-      ctx.fill();
-    }
-  }
-
-  for (let i = 0; i < 120; i++) particles.push(new Particle());
-
-  /* grid lines */
-  function drawGrid() {
-    ctx.globalAlpha = 0.025;
-    ctx.strokeStyle = '#faff69';
-    ctx.lineWidth = 0.5;
-    const step = 80;
-    for (let x = 0; x < W; x += step) {
-      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
-    }
-    for (let y = 0; y < H; y += step) {
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
-    }
-  }
-
-  function loop() {
-    ctx.clearRect(0, 0, W, H);
-    drawGrid();
-    ctx.globalAlpha = 1;
-    particles.forEach(p => { p.update(); p.draw(); });
-    requestAnimationFrame(loop);
-  }
-  loop();
-
-  /* ── TABS ──────────────────────────────────────────────────────────── */
-  function switchTab(name, btn) {
-    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('tab-' + name).classList.add('active');
-    btn.classList.add('active');
-  }
-
-  const dropZone = document.getElementById('drop-zone');
-  const fileInput = document.getElementById('pdf_file');
-  const fileNameEl = document.getElementById('file-name');
-
-  fileInput.addEventListener('change', () => {
-    if (fileInput.files[0]) fileNameEl.textContent = '📎 ' + fileInput.files[0].name;
-  });
-  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
-  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-  dropZone.addEventListener('drop', e => {
-    e.preventDefault(); dropZone.classList.remove('dragover');
-    const file = e.dataTransfer.files[0];
-    if (file) { const dt = new DataTransfer(); dt.items.add(file); fileInput.files = dt.files; fileNameEl.textContent = '📎 ' + file.name; }
-  });
-
-  document.getElementById('upload-form').addEventListener('submit', function(e) {
-    const file = fileInput.files[0];
-    const textVal = document.getElementById('text_input').value.trim();
-    const activeTab = document.querySelector('.tab-pane.active').id;
-    if (activeTab === 'tab-pdf' && !file) { e.preventDefault(); alert('Please select a PDF file.'); return; }
-    if (activeTab === 'tab-text' && textVal.split(/\s+/).filter(Boolean).length < 20) { e.preventDefault(); alert('Please paste more text.'); return; }
-    document.getElementById('spinner').classList.add('active');
-  });
-
-  window.addEventListener('pageshow', () => document.getElementById('spinner').classList.remove('active'));
-</script>
+<script src="{% static 'js/upload.js' %}"></script>
 </body>
 </html>

@@ -1,0 +1,88 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Lincoln Lawyer — AI Legal Assistant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Inconsolata:wght@600&display=swap" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="{% static 'css/base.css' %}"/>
+  <link rel="stylesheet" href="{% static 'css/chat.css' %}"/>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <a class="nav-logo" href="/"><span class="dot"></span>Nyaya Sahayak</a>
+  <div class="nav-links">
+    <a class="nav-link" href="/"><i class="bi bi-upload"></i> Analyze</a>
+    <a class="nav-link active" href="/chat/"><i class="bi bi-chat-dots"></i> Lincoln Lawyer</a>
+  </div>
+  <div class="nav-right">
+    <span class="badge-pill neon"><i class="bi bi-scales"></i> Legal AI</span>
+  </div>
+</nav>
+
+<!-- CHAT PAGE -->
+<div class="chat-page">
+
+  <!-- HEADER -->
+  <div class="chat-page-header">
+    <div class="chat-page-header-left">
+      <div class="chat-avatar">⚖️</div>
+      <div>
+        <div class="chat-page-name"><span>Lincoln</span> Lawyer</div>
+        <div class="chat-page-sub">AI Legal Assistant · Indian Law · Supreme Court Expertise</div>
+      </div>
+    </div>
+    <span class="chat-status">Online</span>
+  </div>
+
+  <!-- QUICK ACTIONS -->
+  <div class="chat-page-quick">
+    <span class="chat-page-quick-label">Ask about:</span>
+    <button class="qbtn" onclick="Chatbot.quickAction('general')"><i class="bi bi-book"></i> Legal Procedures</button>
+    <button class="qbtn" onclick="Chatbot.quickAction('rights')"><i class="bi bi-shield-check"></i> Fundamental Rights</button>
+    <button class="qbtn" onclick="Chatbot.quickAction('bail')"><i class="bi bi-door-open"></i> Bail Process</button>
+    <button class="qbtn" onclick="Chatbot.quickAction('appeal')"><i class="bi bi-arrow-up-circle"></i> Filing Appeal</button>
+    <button class="qbtn" onclick="Chatbot.quickAction('explain')"><i class="bi bi-lightbulb"></i> Explain a Case</button>
+    <button class="qbtn" onclick="Chatbot.quickAction('eli5')"><i class="bi bi-emoji-smile"></i> ELI5</button>
+  </div>
+
+  <!-- MESSAGES -->
+  <div id="chat-messages" class="chat-messages"></div>
+
+  <!-- INPUT -->
+  <div class="chat-page-input">
+    <textarea
+      id="chatInput"
+      class="chat-input"
+      placeholder="Ask any legal question… (Shift+Enter for new line)"
+      rows="1"
+    ></textarea>
+    <button class="btn-send" onclick="Chatbot.send('chatInput')"><i class="bi bi-send-fill"></i></button>
+  </div>
+
+  <!-- DISCLAIMER -->
+  <div class="chat-disclaimer">
+    Lincoln Lawyer provides general legal information, not legal advice. Consult a qualified lawyer for your specific situation.
+  </div>
+
+</div>
+
+<script>
+  window.CSRF_TOKEN  = '{{ csrf_token }}';
+  window.CHATBOT_URL = '{% url "chatbot" %}';
+  window.CHATBOT_MODE = 'lincoln';
+</script>
+<script src="{% static 'js/chatbot.js' %}"></script>
+<script>
+  Chatbot.init(
+    '⚖️ Hello! I\'m Lincoln Lawyer, your AI Legal Assistant specializing in Indian law and Supreme Court judgments.\n\nI can help you understand legal procedures, explain your rights, analyze cases, or answer any legal question. What would you like to know?'
+  );
+</script>
+</body>
+</html>
