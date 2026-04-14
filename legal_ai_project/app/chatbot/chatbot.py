@@ -11,10 +11,10 @@ Config via .env:
   OCI_CHAT_MODEL_ID
 """
 
-import re
 import logging
 from django.conf import settings
 from . import prompts
+from .prompt_config import CASE_SYSTEM, LINCOLN_SYSTEM
 
 logger = logging.getLogger(__name__)
 
@@ -58,33 +58,6 @@ def _chatbot_enabled() -> bool:
     return getattr(settings, "CHATBOT_ENABLED", True)
 
 
-# ── Off-topic pre-filter (case mode only) ────────────────────────────────────
-_CASE_RELATED = [
-    r"\bcase\b", r"\bjudgment\b", r"\bappellant\b", r"\brespondent\b",
-    r"\bappeal\b", r"\bpetition\b", r"\bcourt\b", r"\bsection\b",
-    r"\bconviction\b", r"\bsentence\b", r"\boutcome\b", r"\bverdict\b",
-    r"\blegal\b", r"\blaw\b", r"\bcharge\b", r"\baccused\b",
-    r"\bprediction\b", r"\bconfidence\b", r"\bsimilar\b", r"\brisk\b",
-    r"\bargument\b", r"\bstrategy\b", r"\bnext\s+step\b", r"\bwhat\s+should\b",
-    r"\bexplain\b", r"\bsummar\b", r"\bwho\s+is\b", r"\bwhat\s+happen\b",
-    r"\bwhy\b", r"\bhow\b", r"\bwhen\b", r"\bwhere\b",
-]
-
-_OFF_TOPIC_REPLY = (
-    "I can only answer questions about the case that has been analyzed. "
-    "Please ask something specific to this case — for example: "
-    "\"What sections were cited?\", \"What should the appellant do next?\", "
-    "or \"Explain the outcome.\""
-)
-
-
-def _is_case_related(query: str) -> bool:
-    q = query.lower().strip()
-    if len(q) < 4 or not re.search(r"[a-z]", q):
-        return False
-    return any(re.search(p, q) for p in _CASE_RELATED)
-
-
 # ── OCI chat call ─────────────────────────────────────────────────────────────
 
 def _call(user_prompt: str, system_prompt: str = "") -> str:
@@ -118,7 +91,7 @@ def _call(user_prompt: str, system_prompt: str = "") -> str:
             message=user_prompt,
             chat_history=messages[:-1] if len(messages) > 1 else [],
             preamble_override=system_prompt or None,
-            max_tokens=400,
+            max_tokens=300,
             temperature=0.2,
             is_stream=False,
         )
@@ -140,22 +113,8 @@ def _call(user_prompt: str, system_prompt: str = "") -> str:
 
 
 # ── Quick-action dispatch ─────────────────────────────────────────────────────
-_CASE_SYSTEM = (
-    "You are NUC Legal AI — a case-specific assistant. "
-    "You ONLY discuss the specific legal case provided. "
-    "Never answer general knowledge, math, science, or off-topic questions. "
-    "If a question is not about the provided case, respond ONLY with: "
-    "'I can only answer questions about the case currently being analyzed.'"
-)
-
-_LINCOLN_SYSTEM = (
-    "You are Lincoln Lawyer, an expert AI legal assistant specializing in Indian law, "
-    "the Indian Constitution, and Supreme Court judgments. "
-    "Answer legal questions clearly and helpfully. "
-    "Refuse only completely non-legal questions (math, science, general knowledge). "
-    "Always end with the disclaimer: ⚠️ This is general legal information only and "
-    "does not constitute legal advice. Consult a qualified lawyer for your specific situation."
-)
+_CASE_SYSTEM = CASE_SYSTEM
+_LINCOLN_SYSTEM = LINCOLN_SYSTEM
 
 QUICK_ACTIONS = {
     "explain":   lambda ctx: _call(prompts.explain_case(ctx),   _CASE_SYSTEM),
@@ -201,8 +160,5 @@ def generate_chat_response(user_query: str, context: dict, action: str = "", mod
 
     if not query:
         return "Please type a question or click one of the quick-action buttons."
-
-    if not _is_case_related(query):
-        return _OFF_TOPIC_REPLY
 
     return _call(prompts.general_query(context, query), _CASE_SYSTEM)

@@ -1,0 +1,19 @@
+# ── Django & web ──────────────────────────────────────────────────────────────
+Django>=6.0.4
+python-dotenv>=1.0.0
+
+# ── PDF extraction ─────────────────────────────────────────────────────────────
+pdfplumber>=0.11.0
+pdfminer.six>=20221105
+
+# ── AI / ML ────────────────────────────────────────────────────────────────────
+cohere>=5.0.0                  # extractor correction pipeline (COHERE_API_KEY)
+oci>=2.100.0                   # OCI Generative AI chatbot
+transformers>=4.40.0           # InLegalBERT embeddings
+torch>=2.0.0                   # required by transformers
+numpy>=1.26.0
+scikit-learn>=1.4.0
+joblib>=1.3.0
+
+# ── Utilities ──────────────────────────────────────────────────────────────────
+tqdm>=4.66.0
