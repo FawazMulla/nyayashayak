@@ -40,8 +40,8 @@ class AISettings(models.Model):
 
 class UploadedCase(models.Model):
     user        = models.ForeignKey(User, on_delete=models.CASCADE, related_name="uploaded_cases")
-    file        = models.FileField(upload_to="cases/")
-    filename    = models.CharField(max_length=255, blank=True)
+    file        = models.FileField(upload_to="cases/", max_length=500)
+    filename    = models.CharField(max_length=500, blank=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -56,7 +56,7 @@ class UploadedCase(models.Model):
 class ChatSession(models.Model):
     MODE_CHOICES = [("case", "Case Analyzer"), ("lincoln", "Lincoln Lawyer")]
     user          = models.ForeignKey(User, on_delete=models.CASCADE, related_name="chat_sessions")
-    title         = models.CharField(max_length=255, blank=True)
+    title         = models.CharField(max_length=500, blank=True)
     mode          = models.CharField(max_length=10, choices=MODE_CHOICES, default="case")
     uploaded_case = models.ForeignKey(UploadedCase, null=True, blank=True, on_delete=models.SET_NULL)
     created_at    = models.DateTimeField(auto_now_add=True)
