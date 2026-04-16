@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}AI Configuration — Nyaya Sahayak{% endblock %}
+{% block nav_config %}active{% endblock %}
+
+{% block content %}
+<div class="page-shell narrow">
+  <div class="page-title"><i class="bi bi-toggles" style="color:var(--neon);margin-right:8px;"></i>AI Configuration</div>
+  <div class="page-sub">Toggle AI services on or off. Changes take effect immediately.</div>
+
+  {% if messages %}{% for msg in messages %}<div class="alert-success"><i class="bi bi-check-circle"></i>{{ msg }}</div>{% endfor %}{% endif %}
+
+  <div class="panel" style="margin-bottom:12px;">
+    <div class="panel-head">
+      <i class="bi bi-sliders"></i>
+      <span class="panel-head-title">Service Toggles</span>
+    </div>
+    <div class="panel-body">
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-label"><i class="bi bi-stars" style="color:var(--neon);margin-right:6px;"></i>Cohere AI</div>
+            <div class="toggle-desc">Field correction + AI case summary (uses COHERE_API_KEY)</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" name="cohere_enabled" {% if cfg.cohere_enabled %}checked{% endif %}/>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-label"><i class="bi bi-cloud" style="color:var(--neon);margin-right:6px;"></i>OCI Generative AI</div>
+            <div class="toggle-desc">Lincoln Lawyer + Case chatbot (uses Oracle Cloud credentials)</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" name="oci_enabled" {% if cfg.oci_enabled %}checked{% endif %}/>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div style="margin-top:20px;">
+          <button type="submit" class="btn btn-primary" style="width:auto;padding:10px 24px;">Save Settings</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <i class="bi bi-info-circle"></i>
+      <span class="panel-head-title">Current Status</span>
+    </div>
+    <div class="panel-body">
+      <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:10px;">
+        <span class="status-dot-inline {% if cfg.cohere_enabled %}status-on{% else %}status-off{% endif %}">
+          Cohere: {% if cfg.cohere_enabled %}ON{% else %}OFF{% endif %}
+        </span>
+        <span class="status-dot-inline {% if cfg.oci_enabled %}status-on{% else %}status-off{% endif %}">
+          OCI: {% if cfg.oci_enabled %}ON{% else %}OFF{% endif %}
+        </span>
+      </div>
+      <div style="font-size:11px;color:var(--silver);">Last updated: {{ cfg.updated_at|date:"d M Y H:i" }}</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,1 @@
+web: gunicorn legal_ai_project.wsgi --log-file -

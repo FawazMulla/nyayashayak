@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Login — Nyaya Sahayak{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-logo"><span class="dot"></span>Nyaya Sahayak</div>
+    <div class="auth-title">Sign In</div>
+    <div class="auth-sub">Access your legal AI workspace</div>
+
+    {% if error %}
+    <div class="alert"><i class="bi bi-exclamation-triangle-fill"></i>{{ error }}</div>
+    {% endif %}
+    {% if messages %}{% for msg in messages %}<div class="alert-success"><i class="bi bi-check-circle"></i>{{ msg }}</div>{% endfor %}{% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="field-group">
+        <label class="field-label">Username</label>
+        <input type="text" name="username" class="field-input" required autofocus placeholder="Enter username"/>
+      </div>
+      <div class="field-group" style="margin-bottom:24px;">
+        <label class="field-label">Password</label>
+        <input type="password" name="password" class="field-input" required placeholder="Enter password"/>
+      </div>
+      <button type="submit" class="btn btn-primary">Sign In</button>
+    </form>
+
+    <div class="auth-footer" style="margin-top:14px;">No account? <a href="{% url 'register' %}">Register</a></div>
+    <div class="auth-footer" style="margin-top:6px;"><a href="{% url 'password_reset' %}" style="opacity:.6;">Forgot password?</a></div>
+  </div>
+</div>
+{% endblock %}

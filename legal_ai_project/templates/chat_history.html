@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Chat History — NUC Legal AI{% endblock %}
+
+{% block content %}
+<div class="page-shell">
+  <div class="page-title">
+    <i class="bi bi-clock-history" style="color:var(--neon);margin-right:8px;"></i>Chat History
+  </div>
+  <div class="page-sub">All your past case analyses and Lincoln Lawyer conversations.</div>
+
+  {% if sessions %}
+  <div style="margin-top:1.5rem;display:flex;flex-direction:column;gap:.6rem;">
+    {% for s in sessions %}
+    <a href="{% url 'chat_session' s.pk %}" class="history-row">
+      <div class="history-left">
+        <span class="history-badge {% if s.mode == 'case' %}badge-case{% else %}badge-lincoln{% endif %}">
+          {% if s.mode == "case" %}Case{% else %}Lincoln{% endif %}
+        </span>
+        <div class="history-title">{{ s.title|default:"Untitled Session" }}</div>
+      </div>
+      <div class="history-right">
+        <span class="history-meta">{{ s.updated_at|date:"d M Y, H:i" }}</span>
+        <span class="history-meta">{{ s.messages.count }} msg{{ s.messages.count|pluralize }}</span>
+        {% if s.uploaded_case %}
+        <span class="history-meta"><i class="bi bi-paperclip"></i> {{ s.uploaded_case.filename|truncatechars:20 }}</span>
+        {% endif %}
+        <i class="bi bi-chevron-right" style="color:var(--silver);font-size:.8rem;"></i>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="empty-state" style="margin-top:4rem;">
+    <i class="bi bi-chat-square-dots" style="font-size:3rem;color:var(--silver);opacity:.4;"></i>
+    <p style="margin-top:1rem;color:var(--silver);">
+      No chat history yet.
+      <a href="{% url 'upload' %}" style="color:var(--neon);">Analyze a case</a> to get started.
+    </p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -93,7 +93,12 @@ def _get_client():
 
 
 def _ai_enabled() -> bool:
-    return getattr(settings, "AI_CORRECTION_ENABLED", True)
+    # Check DB toggle first, fall back to .env setting
+    try:
+        from app.models import AISettings
+        return AISettings.get().cohere_enabled
+    except Exception:
+        return getattr(settings, "AI_CORRECTION_ENABLED", True)
 
 
 # ── Rule-based sanity check ───────────────────────────────────────────────────

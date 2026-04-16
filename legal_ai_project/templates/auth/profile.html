@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Profile — Nyaya Sahayak{% endblock %}
+{% block nav_dashboard %}{% endblock %}
+
+{% block content %}
+<div class="page-shell narrow">
+  <div class="page-title"><i class="bi bi-person-circle" style="color:var(--neon);margin-right:8px;"></i>My Profile</div>
+  <div class="page-sub">Account details and access status</div>
+
+  <div class="panel">
+    <div class="panel-body">
+      <div class="info-row">
+        <span class="info-row-label">Username</span>
+        <span class="info-row-value">{{ user.username }}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-row-label">Email</span>
+        <span class="info-row-value">{{ user.email|default:"—" }}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-row-label">Role</span>
+        <span class="info-row-value"><span class="badge badge-role">{{ user.get_role_display }}</span></span>
+      </div>
+      <div class="info-row">
+        <span class="info-row-label">Status</span>
+        <span class="info-row-value">
+          {% if user.is_approved %}
+            <span class="badge badge-approved"><i class="bi bi-check-circle"></i> Approved</span>
+          {% else %}
+            <span class="badge badge-pending"><i class="bi bi-clock"></i> Pending Approval</span>
+          {% endif %}
+        </span>
+      </div>
+      <div class="info-row">
+        <span class="info-row-label">Member Since</span>
+        <span class="info-row-value">{{ user.date_joined|date:"d M Y" }}</span>
+      </div>
+    </div>
+  </div>
+
+  {% if user.is_staff %}
+  <div style="display:flex;gap:8px;margin-top:16px;">
+    <a href="{% url 'admin_panel' %}" class="btn btn-ghost" style="padding:7px 14px;font-size:12px;"><i class="bi bi-people"></i> Admin Panel</a>
+    <a href="{% url 'ai_config' %}" class="btn btn-ghost" style="padding:7px 14px;font-size:12px;"><i class="bi bi-toggles"></i> AI Config</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

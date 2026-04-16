@@ -55,7 +55,11 @@ def _get_client():
 
 
 def _chatbot_enabled() -> bool:
-    return getattr(settings, "CHATBOT_ENABLED", True)
+    try:
+        from app.models import AISettings
+        return AISettings.get().oci_enabled
+    except Exception:
+        return getattr(settings, "CHATBOT_ENABLED", True)
 
 
 # ── OCI chat call ─────────────────────────────────────────────────────────────

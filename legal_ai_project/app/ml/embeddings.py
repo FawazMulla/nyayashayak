@@ -18,11 +18,24 @@ logger = logging.getLogger(__name__)
 _LOCAL_MODEL_DIR = Path(__file__).resolve().parents[2] / "models" / "InLegalBERT"
 
 def _model_source() -> str:
-    """Use local repo path if model files exist there, else fall back to HF hub."""
-    required = ["config.json", "tokenizer_config.json", "vocab.txt"]
+    """
+    Use local repo path if all required model files exist.
+    Raises RuntimeError if local files are missing — we do NOT auto-download
+    from HuggingFace in production. Run build_ml after placing model files.
+    """
+    required = ["config.json", "tokenizer_config.json", "vocab.txt", "pytorch_model.bin"]
     if all((_LOCAL_MODEL_DIR / f).exists() for f in required):
         return str(_LOCAL_MODEL_DIR)
-    return "law-ai/InLegalBERT"   # will download from HuggingFace
+    # Check for safetensors variant too
+    required_safe = ["config.json", "tokenizer_config.json", "vocab.txt", "model.safetensors"]
+    if all((_LOCAL_MODEL_DIR / f).exists() for f in required_safe):
+        return str(_LOCAL_MODEL_DIR)
+    missing = [f for f in required if not (_LOCAL_MODEL_DIR / f).exists()]
+    logger.error(
+        f"InLegalBERT model files missing from {_LOCAL_MODEL_DIR}: {missing}. "
+        "Place model files there or run: git lfs pull"
+    )
+    return str(_LOCAL_MODEL_DIR)  # return path anyway, transformers will give a clear error
 MAX_TOKENS   = 512
 EMBED_FILE   = "embeddings.npy"
 META_FILE    = "embeddings_meta.npy"   # stores input_text strings for similarity

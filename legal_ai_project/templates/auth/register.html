@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Register — Nyaya Sahayak{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-card wide">
+    <div class="auth-logo"><span class="dot"></span>Nyaya Sahayak</div>
+    <div class="auth-title">Create Account</div>
+    <div class="auth-sub">Your account will be reviewed by an admin before activation.</div>
+
+    <div class="info-box"><i class="bi bi-info-circle"></i>After registration, wait for admin approval before logging in.</div>
+
+    {% if messages %}{% for msg in messages %}<div class="alert-success"><i class="bi bi-check-circle"></i>{{ msg }}</div>{% endfor %}{% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      {% for field in form %}
+      <div class="field-group">
+        <label class="field-label">{{ field.label }}</label>
+
+        {% if field.field.widget.input_type == 'select' or field.html_name == 'role' %}
+          {# Render role as a proper styled <select> #}
+          <select name="{{ field.html_name }}" class="field-input" required>
+            {% for val, label in field.field.choices %}
+            <option value="{{ val }}" {% if field.value == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          <div class="field-hint">
+            Case Analyzer — upload &amp; analyze judgments &nbsp;·&nbsp;
+            Lincoln Lawyer — AI legal chatbot &nbsp;·&nbsp;
+            Both — full access
+          </div>
+
+        {% elif field.html_name == 'password1' or field.html_name == 'password2' %}
+          <input type="password" name="{{ field.html_name }}" class="field-input"
+            {% if field.field.required %}required{% endif %}
+            placeholder="{{ field.label }}" autocomplete="new-password"/>
+
+        {% elif field.html_name == 'email' %}
+          <input type="email" name="{{ field.html_name }}" class="field-input"
+            {% if field.field.required %}required{% endif %}
+            placeholder="your@email.com"
+            {% if field.value %}value="{{ field.value }}"{% endif %}/>
+
+        {% else %}
+          <input type="text" name="{{ field.html_name }}" class="field-input"
+            {% if field.field.required %}required{% endif %}
+            placeholder="{{ field.label }}"
+            {% if field.value %}value="{{ field.value }}"{% endif %}/>
+        {% endif %}
+
+        {% if field.errors %}
+        <div class="field-errors">{% for e in field.errors %}<span class="field-error">{{ e }}</span>{% endfor %}</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary" style="margin-top:8px;">Register</button>
+    </form>
+
+    <div class="auth-footer">Already have an account? <a href="{% url 'login' %}">Login</a></div>
+  </div>
+</div>
+{% endblock %}

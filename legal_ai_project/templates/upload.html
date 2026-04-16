@@ -1,132 +1,151 @@
+{% extends "base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Nyaya Sahayak — Analyze Case</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Inconsolata:wght@600&display=swap" rel="stylesheet"/>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
-  <link rel="stylesheet" href="{% static 'css/base.css' %}"/>
-  <link rel="stylesheet" href="{% static 'css/upload.css' %}"/>
-</head>
-<body>
+{% block title %}Analyze Case — Nyaya Sahayak{% endblock %}
+{% block nav_analyze %}active{% endblock %}
 
-<canvas id="bg-canvas"></canvas>
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/upload.css' %}"/>
+<style>
+  /* Analyze page — centered single-column, no hero needed (landing covers that) */
+  .analyze-wrap {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+  .analyze-header { margin-bottom: 28px; }
+  .analyze-title { font-size: 1.4rem; font-weight: 900; color: var(--white); margin-bottom: 6px; }
+  .analyze-sub { font-size: 13px; color: var(--silver); }
 
-<nav class="nav">
-  <a class="nav-logo" href="/"><span class="dot"></span>Nyaya Sahayak</a>
-  <div class="nav-links">
-    <a class="nav-link active" href="/"><i class="bi bi-upload"></i> Analyze</a>
-    <a class="nav-link" href="/chat/"><i class="bi bi-chat-dots"></i> Lincoln Lawyer</a>
-  </div>
-  <div class="nav-right">
-    <span class="badge-pill">ML-Powered</span>
-    <span class="badge-pill neon"><i class="bi bi-stars"></i> Cohere AI</span>
-  </div>
-</nav>
+  /* Pipeline steps */
+  .pipeline-steps {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 28px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .pipeline-step {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--silver);
+    white-space: nowrap;
+  }
+  .pipeline-step i { color: var(--neon); font-size: 12px; }
+  .pipeline-arrow { color: var(--deep); margin: 0 8px; font-size: 10px; }
 
+  /* Form panel */
+  .analyze-panel {
+    background: var(--near-black);
+    border: 1px solid var(--charcoal);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .analyze-panel-head {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--charcoal);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(20,20,20,0.9);
+  }
+  .analyze-panel-head i { color: var(--neon); font-size: 12px; }
+  .analyze-panel-head-title { font-size: 11px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: var(--white); }
+  .analyze-panel-body { padding: 20px; }
+</style>
+{% endblock %}
+
+{% block content %}
 <div class="spinner-overlay" id="spinner">
   <div class="spinner"></div>
   <p class="spinner-text">Running ML + AI pipeline…</p>
   <p class="spinner-sub">Extractor → Sanity Check → Cohere</p>
 </div>
 
-<div class="layout">
+<div class="analyze-wrap">
 
-  <!-- HERO -->
-  <div class="hero fade-up">
-    <div class="hero-label">Machine Learning Legal Assistant</div>
-    <h1>Analyze Legal<br>Cases <span class="accent">Instantly</span></h1>
-    <p>ML models trained on Supreme Court judgments. Hybrid pipeline: rule-based extraction + Cohere AI correction.</p>
-    <div class="hero-stats">
-      <div>
-        <div class="stat-num">400<span>+</span></div>
-        <div class="stat-label">Judgments</div>
-      </div>
-      <div>
-        <div class="stat-num"><span>#</span>1</div>
-        <div class="stat-label">InLegalBERT</div>
-      </div>
-      <div>
-        <div class="stat-num">2<span>s</span></div>
-        <div class="stat-label">Avg. Analysis</div>
-      </div>
+  <div class="analyze-header">
+    <div class="analyze-title">Analyze a Case</div>
+    <div class="analyze-sub">Upload a Supreme Court PDF or paste judgment text to run the full ML pipeline.</div>
+  </div>
+
+  <!-- Pipeline indicator -->
+  <div class="pipeline-steps">
+    <div class="pipeline-step"><i class="bi bi-upload"></i> Upload</div>
+    <span class="pipeline-arrow">›</span>
+    <div class="pipeline-step"><i class="bi bi-search"></i> Extract</div>
+    <span class="pipeline-arrow">›</span>
+    <div class="pipeline-step"><i class="bi bi-shield-check"></i> Validate</div>
+    <span class="pipeline-arrow">›</span>
+    <div class="pipeline-step"><i class="bi bi-stars"></i> AI Correct</div>
+    <span class="pipeline-arrow">›</span>
+    <div class="pipeline-step"><i class="bi bi-cpu"></i> ML Predict</div>
+    <span class="pipeline-arrow">›</span>
+    <div class="pipeline-step"><i class="bi bi-bar-chart"></i> Results</div>
+  </div>
+
+  {% if error %}
+  <div class="alert" style="margin-bottom:16px;"><i class="bi bi-exclamation-triangle-fill"></i>{{ error }}</div>
+  {% endif %}
+
+  <div class="analyze-panel">
+    <div class="analyze-panel-head">
+      <i class="bi bi-file-earmark-text"></i>
+      <span class="analyze-panel-head-title">Case Input</span>
     </div>
-    <div class="pills">
-      <span class="pill"><i class="bi bi-diagram-3"></i>Outcome Classification</span>
-      <span class="pill"><i class="bi bi-tags"></i>Category Detection</span>
-      <span class="pill"><i class="bi bi-shield-check"></i>Section Extraction</span>
-      <span class="pill"><i class="bi bi-stars"></i>AI Correction</span>
-      <span class="pill"><i class="bi bi-bar-chart"></i>ML Confidence</span>
+    <div class="analyze-panel-body">
+
+      <!-- Tabs -->
+      <div class="tabs" style="margin-bottom:16px;">
+        <button class="tab-btn active" onclick="switchTab('pdf', this)">
+          <i class="bi bi-file-earmark-pdf"></i> Upload PDF
+        </button>
+        <button class="tab-btn" onclick="switchTab('text', this)">
+          <i class="bi bi-textarea-t"></i> Paste Text
+        </button>
+      </div>
+
+      <form method="post" action="{% url 'analyze' %}" enctype="multipart/form-data" id="upload-form">
+        {% csrf_token %}
+
+        <!-- PDF tab -->
+        <div class="tab-pane active" id="tab-pdf">
+          <div class="drop-zone" id="drop-zone" onclick="document.getElementById('pdf_file').click()">
+            <i class="bi bi-file-earmark-pdf"></i>
+            <p><strong>Drag & drop a PDF here</strong></p>
+            <p>or click to browse</p>
+            <input type="file" name="pdf_file" id="pdf_file" accept=".pdf" style="display:none"/>
+          </div>
+          <div id="file-name"></div>
+        </div>
+
+        <!-- Text tab -->
+        <div class="tab-pane" id="tab-text">
+          <textarea name="text_input" id="text_input" rows="9"
+            placeholder="Paste the full judgment text here (minimum 150 words for quality extraction)…"></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="submit-btn" style="margin-top:20px;">
+          <i class="bi bi-lightning-charge-fill"></i> Analyze Case
+        </button>
+      </form>
+
     </div>
   </div>
 
-  <!-- FORM PANEL -->
-  <div class="form-panel fade-up" style="animation-delay:.15s">
-
-    {% if error %}
-    <div class="alert"><i class="bi bi-exclamation-triangle-fill"></i>{{ error }}</div>
-    {% endif %}
-
-    <div class="tabs">
-      <button class="tab-btn active" onclick="switchTab('pdf', this)">
-        <i class="bi bi-file-earmark-pdf"></i> Upload PDF
-      </button>
-      <button class="tab-btn" onclick="switchTab('text', this)">
-        <i class="bi bi-textarea-t"></i> Paste Text
-      </button>
-    </div>
-
-    <form method="post" action="/analyze/" enctype="multipart/form-data" id="upload-form">
-      {% csrf_token %}
-
-      <div class="tab-pane active" id="tab-pdf">
-        <div class="drop-zone" id="drop-zone" onclick="document.getElementById('pdf_file').click()">
-          <i class="bi bi-file-earmark-pdf"></i>
-          <p><strong>Drag & drop a PDF here</strong></p>
-          <p>or click to browse</p>
-          <input type="file" name="pdf_file" id="pdf_file" accept=".pdf" style="display:none"/>
-        </div>
-        <div id="file-name"></div>
-      </div>
-
-      <div class="tab-pane" id="tab-text">
-        <textarea name="text_input" id="text_input" rows="7"
-          placeholder="Paste the full judgment text here…"></textarea>
-      </div>
-
-      <div class="divider">Upcoming Features</div>
-
-      <div class="upcoming-grid">
-        <div class="field-group">
-          <label class="field-label"><i class="bi bi-chat-dots"></i> Chatbot Query <span class="upcoming-tag">Soon</span></label>
-          <input type="text" name="chatbot_query" disabled placeholder="Ask about this case…"/>
-        </div>
-        <div class="field-group">
-          <label class="field-label"><i class="bi bi-diagram-2"></i> Similarity Search <span class="upcoming-tag">Soon</span></label>
-          <select name="similarity_method" disabled><option>TF-IDF Cosine</option><option>BERT Embeddings</option></select>
-        </div>
-        <div class="field-group">
-          <label class="field-label"><i class="bi bi-list-ol"></i> Top-N Cases <span class="upcoming-tag">Soon</span></label>
-          <select name="top_n" disabled><option>Top 3</option><option selected>Top 5</option><option>Top 10</option></select>
-        </div>
-        <div class="field-group">
-          <label class="field-label"><i class="bi bi-bar-chart"></i> ML Model <span class="upcoming-tag">Soon</span></label>
-          <select name="ml_model" disabled><option>Logistic Regression</option><option>Random Forest</option><option>SVM</option></select>
-        </div>
-      </div>
-
-      <button type="submit" class="btn btn-primary" id="submit-btn">
-        <i class="bi bi-lightning-charge-fill"></i> Analyze Case
-      </button>
-    </form>
+  <!-- Feature pills -->
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:20px;">
+    <span class="badge badge-role"><i class="bi bi-diagram-3"></i> Outcome Classification</span>
+    <span class="badge badge-role"><i class="bi bi-tags"></i> Category Detection</span>
+    <span class="badge badge-role"><i class="bi bi-shield-check"></i> Section Extraction</span>
+    <span class="badge badge-role"><i class="bi bi-stars"></i> AI Correction</span>
+    <span class="badge badge-role"><i class="bi bi-bar-chart"></i> ML Confidence</span>
   </div>
 
 </div>
 
 <script src="{% static 'js/upload.js' %}"></script>
-</body>
-</html>
+{% endblock %}

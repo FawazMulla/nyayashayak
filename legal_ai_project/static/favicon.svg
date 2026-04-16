@@ -1,0 +1,12 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="32" height="32" fill="#000000"/>
+  <!-- Balance scales -->
+  <line x1="16" y1="5" x2="16" y2="27" stroke="#faff69" stroke-width="2" stroke-linecap="round"/>
+  <line x1="6" y1="11" x2="26" y2="11" stroke="#faff69" stroke-width="2" stroke-linecap="round"/>
+  <!-- Left pan -->
+  <path d="M6 11 C5 15 5 17 6 19 C7 21 9 21 10 19 C11 17 11 15 10 11" stroke="#faff69" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <!-- Right pan -->
+  <path d="M22 11 C21 15 21 17 22 19 C23 21 25 21 26 19 C27 17 27 15 26 11" stroke="#faff69" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <!-- Base -->
+  <line x1="12" y1="27" x2="20" y2="27" stroke="#faff69" stroke-width="2" stroke-linecap="round"/>
+</svg>

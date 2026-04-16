@@ -1,0 +1,50 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}Nyaya Sahayak{% endblock %}</title>
+  <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Inconsolata:wght@600&display=swap" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="{% static 'css/base.css' %}"/>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="{% url 'landing' %}"><span class="dot"></span>Nyaya Sahayak</a>
+  <div class="nav-links">
+    {% if user.is_authenticated %}
+      <a class="nav-link {% block nav_dashboard %}{% endblock %}" href="{% url 'dashboard' %}"><i class="bi bi-grid"></i> Dashboard</a>
+      {% if user.is_approved %}
+        <a class="nav-link {% block nav_analyze %}{% endblock %}" href="{% url 'upload' %}"><i class="bi bi-upload"></i> Analyze</a>
+        <a class="nav-link {% block nav_chat %}{% endblock %}" href="{% url 'lincoln_lawyer' %}"><i class="bi bi-scales"></i> Lincoln Lawyer</a>
+      {% endif %}
+      {% if user.is_staff %}
+        <a class="nav-link {% block nav_admin %}{% endblock %}" href="{% url 'admin_panel' %}"><i class="bi bi-people"></i> Users</a>
+        <a class="nav-link {% block nav_config %}{% endblock %}" href="{% url 'ai_config' %}"><i class="bi bi-toggles"></i> AI Config</a>
+      {% endif %}
+    {% else %}
+      <a class="nav-link" href="{% url 'landing' %}"><i class="bi bi-house"></i> Home</a>
+    {% endif %}
+  </div>
+  <div class="nav-right">
+    {% if user.is_authenticated %}
+      <a class="nav-link" href="{% url 'profile' %}"><i class="bi bi-person-circle"></i> {{ user.username }}</a>
+      <a class="btn btn-back" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right"></i> Logout</a>
+    {% else %}
+      <a class="nav-link" href="{% url 'login' %}">Login</a>
+      <a class="btn btn-primary" style="width:auto;padding:6px 16px;font-size:12px;" href="{% url 'register' %}">Register</a>
+    {% endif %}
+  </div>
+</nav>
+
+{% block content %}{% endblock %}
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

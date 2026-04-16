@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Admin Panel — Nyaya Sahayak{% endblock %}
+{% block nav_admin %}active{% endblock %}
+
+{% block content %}
+<div class="page-shell wide">
+  <div class="page-title"><i class="bi bi-shield-check" style="color:var(--neon);margin-right:8px;"></i>User Management</div>
+  <div class="page-sub">Approve, reject, and assign roles to registered users.</div>
+
+  {% if messages %}{% for msg in messages %}<div class="alert-success"><i class="bi bi-check-circle"></i>{{ msg }}</div>{% endfor %}{% endif %}
+
+  <div class="panel">
+    <div class="panel-head">
+      <i class="bi bi-people"></i>
+      <span class="panel-head-title">Registered Users</span>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Joined</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          <tr>
+            <td>
+              <span style="font-weight:600;">{{ u.username }}</span>
+              {% if u.is_staff %}<span class="badge badge-staff" style="margin-left:6px;">Staff</span>{% endif %}
+            </td>
+            <td style="color:var(--silver);">{{ u.email|default:"—" }}</td>
+            <td>
+              <form method="post" style="display:inline;">
+                {% csrf_token %}
+                <input type="hidden" name="user_id" value="{{ u.pk }}"/>
+                <input type="hidden" name="action" value="set_role"/>
+                <select name="role" class="role-select" onchange="this.form.submit()">
+                  {% for val,label in role_choices %}
+                  <option value="{{ val }}" {% if u.role == val %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </form>
+            </td>
+            <td>
+              {% if u.is_approved %}<span class="badge badge-approved"><i class="bi bi-check-circle"></i> Approved</span>
+              {% elif not u.is_active %}<span class="badge badge-inactive"><i class="bi bi-x-circle"></i> Inactive</span>
+              {% else %}<span class="badge badge-pending"><i class="bi bi-clock"></i> Pending</span>{% endif %}
+            </td>
+            <td style="color:var(--silver);">{{ u.date_joined|date:"d M Y" }}</td>
+            <td>
+              <div style="display:flex;gap:6px;">
+                <form method="post" style="display:inline;">
+                  {% csrf_token %}
+                  <input type="hidden" name="user_id" value="{{ u.pk }}"/>
+                  <input type="hidden" name="action" value="approve"/>
+                  <button type="submit" class="btn-approve">Approve</button>
+                </form>
+                <form method="post" style="display:inline;">
+                  {% csrf_token %}
+                  <input type="hidden" name="user_id" value="{{ u.pk }}"/>
+                  <input type="hidden" name="action" value="reject"/>
+                  <button type="submit" class="btn-reject">Reject</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="empty-state">No users registered yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Danger Zone ─────────────────────────────────────────────────── -->
+  <div class="panel" style="border:1px solid rgba(248,113,113,.25);margin-top:2rem;">
+    <div class="panel-head" style="background:rgba(248,113,113,.06);">
+      <i class="bi bi-exclamation-triangle" style="color:#f87171;"></i>
+      <span class="panel-head-title" style="color:#f87171;">Danger Zone</span>
+    </div>
+    <div style="padding:1.5rem;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+        <div>
+          <div style="font-weight:600;color:#e8e8e8;margin-bottom:4px;">Reset System Data</div>
+          <div style="font-size:.82rem;color:#99a;">
+            Permanently deletes all non-superuser accounts, chat sessions, messages, and uploaded files.
+            <strong style="color:#f87171;">Superusers are preserved.</strong> This cannot be undone.
+          </div>
+        </div>
+        <button onclick="document.getElementById('reset-modal').style.display='flex'"
+          style="background:rgba(248,113,113,.12);color:#f87171;border:1px solid rgba(248,113,113,.35);border-radius:10px;padding:.55rem 1.4rem;font-weight:700;font-size:.88rem;cursor:pointer;white-space:nowrap;">
+          <i class="bi bi-trash3 me-2"></i>Reset System
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Confirmation Modal ──────────────────────────────────────────────── -->
+<div id="reset-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:#162447;border:1px solid rgba(248,113,113,.35);border-radius:20px;padding:2rem;max-width:420px;width:90%;text-align:center;">
+    <div style="font-size:2.5rem;margin-bottom:.75rem;">⚠️</div>
+    <h5 style="color:#f87171;font-weight:700;margin-bottom:.5rem;">Confirm System Reset</h5>
+    <p style="color:#99a;font-size:.88rem;margin-bottom:1.5rem;">
+      This will permanently delete all non-superuser users, chat sessions, messages, and uploaded files.
+      <strong style="color:#e8e8e8;">This action cannot be undone.</strong>
+    </p>
+    <div style="display:flex;gap:.75rem;justify-content:center;">
+      <button onclick="document.getElementById('reset-modal').style.display='none'"
+        style="background:rgba(255,255,255,.08);color:#e8e8e8;border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:.55rem 1.5rem;font-weight:600;cursor:pointer;">
+        Cancel
+      </button>
+      <form method="post" style="display:inline;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="reset_system"/>
+        <button type="submit"
+          style="background:#f87171;color:white;border:none;border-radius:10px;padding:.55rem 1.5rem;font-weight:700;cursor:pointer;">
+          Yes, Reset Everything
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

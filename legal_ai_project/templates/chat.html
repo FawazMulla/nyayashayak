@@ -1,41 +1,37 @@
+{% extends "base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Lincoln Lawyer — AI Legal Assistant</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Inconsolata:wght@600&display=swap" rel="stylesheet"/>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
-  <link rel="stylesheet" href="{% static 'css/base.css' %}"/>
-  <link rel="stylesheet" href="{% static 'css/chat.css' %}"/>
-</head>
-<body>
+{% block title %}Lincoln Lawyer — AI Legal Assistant{% endblock %}
+{% block nav_chat %}active{% endblock %}
 
-<!-- NAV -->
-<nav class="nav">
-  <a class="nav-logo" href="/"><span class="dot"></span>Nyaya Sahayak</a>
-  <div class="nav-links">
-    <a class="nav-link" href="/"><i class="bi bi-upload"></i> Analyze</a>
-    <a class="nav-link active" href="/chat/"><i class="bi bi-chat-dots"></i> Lincoln Lawyer</a>
-  </div>
-  <div class="nav-right">
-    <span class="badge-pill neon"><i class="bi bi-scales"></i> Legal AI</span>
-  </div>
-</nav>
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/chat.css' %}"/>
+{% endblock %}
 
-<!-- CHAT PAGE -->
+{% block content %}
 <div class="chat-page">
 
   <!-- HEADER -->
   <div class="chat-page-header">
     <div class="chat-page-header-left">
-      <div class="chat-avatar">⚖️</div>
+
+      <!-- SVG avatar -->
+      <div class="chat-avatar">
+        <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <!-- Balance scales -->
+          <line x1="13" y1="3" x2="13" y2="23" stroke="#faff69" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="4" y1="7" x2="22" y2="7" stroke="#faff69" stroke-width="1.5" stroke-linecap="round"/>
+          <!-- Left pan -->
+          <path d="M4 7 C3 10 3 12 4 13 C5 14 7 14 8 13 C9 12 9 10 8 7" stroke="#faff69" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+          <!-- Right pan -->
+          <path d="M18 7 C17 10 17 12 18 13 C19 14 21 14 22 13 C23 12 23 10 22 7" stroke="#faff69" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+          <!-- Base -->
+          <line x1="9" y1="23" x2="17" y2="23" stroke="#faff69" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+
       <div>
         <div class="chat-page-name"><span>Lincoln</span> Lawyer</div>
-        <div class="chat-page-sub">AI Legal Assistant · Indian Law · Supreme Court Expertise</div>
+        <div class="chat-page-sub">AI Legal Assistant &middot; Indian Law &middot; Supreme Court Expertise</div>
       </div>
     </div>
     <span class="chat-status">Online</span>
@@ -44,12 +40,30 @@
   <!-- QUICK ACTIONS -->
   <div class="chat-page-quick">
     <span class="chat-page-quick-label">Ask about:</span>
-    <button class="qbtn" onclick="Chatbot.quickAction('general')"><i class="bi bi-book"></i> Legal Procedures</button>
-    <button class="qbtn" onclick="Chatbot.quickAction('rights')"><i class="bi bi-shield-check"></i> Fundamental Rights</button>
-    <button class="qbtn" onclick="Chatbot.quickAction('bail')"><i class="bi bi-door-open"></i> Bail Process</button>
-    <button class="qbtn" onclick="Chatbot.quickAction('appeal')"><i class="bi bi-arrow-up-circle"></i> Filing Appeal</button>
-    <button class="qbtn" onclick="Chatbot.quickAction('explain')"><i class="bi bi-lightbulb"></i> Explain a Case</button>
-    <button class="qbtn" onclick="Chatbot.quickAction('eli5')"><i class="bi bi-emoji-smile"></i> ELI5</button>
+    <button class="qbtn" onclick="Chatbot.quickAction('general')">
+      <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M1 2h10M1 6h7M1 10h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Legal Procedures
+    </button>
+    <button class="qbtn" onclick="Chatbot.quickAction('rights')">
+      <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 1L1 4v3c0 2.5 2 4.5 5 5 3-0.5 5-2.5 5-5V4L6 1z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+      Fundamental Rights
+    </button>
+    <button class="qbtn" onclick="Chatbot.quickAction('bail')">
+      <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><rect x="2" y="4" width="8" height="7" rx="1" stroke="currentColor" stroke-width="1.3"/><path d="M4 4V3a2 2 0 014 0v1" stroke="currentColor" stroke-width="1.3"/></svg>
+      Bail Process
+    </button>
+    <button class="qbtn" onclick="Chatbot.quickAction('appeal')">
+      <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 10V2M3 5l3-3 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Filing Appeal
+    </button>
+    <button class="qbtn" onclick="Chatbot.quickAction('explain')">
+      <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.3"/><path d="M6 5.5v3M6 3.5v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Explain a Case
+    </button>
+    <button class="qbtn" onclick="Chatbot.quickAction('eli5')">
+      <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.3"/><path d="M4 7.5s.8 1 2 1 2-1 2-1M4.5 4.5h.01M7.5 4.5h.01" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      ELI5
+    </button>
   </div>
 
   <!-- MESSAGES -->
@@ -63,7 +77,11 @@
       placeholder="Ask any legal question… (Shift+Enter for new line)"
       rows="1"
     ></textarea>
-    <button class="btn-send" onclick="Chatbot.send('chatInput')"><i class="bi bi-send-fill"></i></button>
+    <button class="btn-send" onclick="Chatbot.send('chatInput')">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12.5 1.5L6.5 7.5M12.5 1.5L8.5 12.5L6.5 7.5M12.5 1.5L1.5 5.5L6.5 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
   </div>
 
   <!-- DISCLAIMER -->
@@ -74,15 +92,14 @@
 </div>
 
 <script>
-  window.CSRF_TOKEN  = '{{ csrf_token }}';
-  window.CHATBOT_URL = '{% url "chatbot" %}';
+  window.CSRF_TOKEN   = '{{ csrf_token }}';
+  window.CHATBOT_URL  = '{% url "chatbot" %}';
   window.CHATBOT_MODE = 'lincoln';
 </script>
 <script src="{% static 'js/chatbot.js' %}"></script>
 <script>
   Chatbot.init(
-    '⚖️ Hello! I\'m Lincoln Lawyer, your AI Legal Assistant specializing in Indian law and Supreme Court judgments.\n\nI can help you understand legal procedures, explain your rights, analyze cases, or answer any legal question. What would you like to know?'
+    '⚖️  Hello! I\'m Lincoln Lawyer, your AI Legal Assistant specialising in Indian law and Supreme Court judgments.\n\nI can help you understand legal procedures, explain your rights, analyse cases, or answer any legal question. What would you like to know?'
   );
 </script>
-</body>
-</html>
+{% endblock %}

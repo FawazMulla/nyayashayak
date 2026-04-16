@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Nyaya Sahayak — AI-Powered Legal Analysis{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* LANDING-ONLY STYLES */
+  #bg-canvas { position:fixed;inset:0;z-index:0;pointer-events:none; }
+
+  .landing-hero {
+    position:relative;z-index:1;
+    min-height:calc(100vh - 48px);
+    display:flex;align-items:center;
+    padding:0 40px;
+    max-width:1200px;margin:0 auto;
+  }
+  .hero-label {
+    font-size:11px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;
+    color:var(--silver);margin-bottom:20px;display:flex;align-items:center;gap:8px;
+  }
+  .hero-label::before{content:'';width:20px;height:1px;background:var(--neon);}
+  .hero-h1 {
+    font-size:clamp(2.8rem,5.5vw,5rem);font-weight:900;line-height:1.0;
+    color:var(--white);margin-bottom:20px;
+  }
+  .hero-h1 .accent{color:var(--neon);}
+  .hero-p {
+    font-size:15px;color:var(--silver);line-height:1.7;
+    max-width:480px;margin-bottom:36px;
+  }
+  .hero-ctas{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:48px;}
+  .btn-hero-primary {
+    background:var(--green);border:1px solid var(--near-black);color:var(--white);
+    font-family:'Inter',sans-serif;font-size:14px;font-weight:700;
+    padding:12px 28px;border-radius:4px;cursor:pointer;text-decoration:none;
+    display:inline-flex;align-items:center;gap:8px;transition:background .15s;
+  }
+  .btn-hero-primary:hover{background:var(--hover);color:var(--white);}
+  .btn-hero-ghost {
+    background:transparent;border:1px solid var(--olive);color:var(--neon);
+    font-family:'Inter',sans-serif;font-size:14px;font-weight:700;
+    padding:12px 28px;border-radius:4px;cursor:pointer;text-decoration:none;
+    display:inline-flex;align-items:center;gap:8px;transition:background .15s;
+  }
+  .btn-hero-ghost:hover{background:rgba(250,255,105,0.06);}
+
+  .hero-stats{display:flex;gap:40px;flex-wrap:wrap;}
+  .stat-num{font-size:2rem;font-weight:900;color:var(--white);line-height:1;}
+  .stat-num span{color:var(--neon);}
+  .stat-label{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--silver);margin-top:4px;}
+
+  /* FEATURES */
+  .features-section{position:relative;z-index:1;border-top:1px solid var(--charcoal);padding:72px 40px;}
+  .section-label-row{text-align:center;margin-bottom:48px;}
+  .section-overline{font-size:11px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:var(--silver);margin-bottom:12px;}
+  .section-h2{font-size:clamp(1.6rem,3vw,2.5rem);font-weight:900;color:var(--white);}
+
+  .feat-grid{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+    gap:12px;max-width:1100px;margin:0 auto;
+  }
+  .feat-card{
+    background:var(--near-black);border:1px solid var(--charcoal);border-radius:8px;
+    padding:24px;transition:border-color .15s;
+  }
+  .feat-card:hover{border-color:var(--neon);}
+  .feat-icon{font-size:1.5rem;color:var(--neon);margin-bottom:12px;display:block;}
+  .feat-svg{width:28px;height:28px;margin-bottom:12px;display:block;}
+  .feat-title{font-size:14px;font-weight:700;color:var(--white);margin-bottom:6px;}
+  .feat-desc{font-size:12px;color:var(--silver);line-height:1.6;}
+
+  /* STATS BAR */
+  .stats-bar{
+    position:relative;z-index:1;
+    border-top:1px solid var(--charcoal);border-bottom:1px solid var(--charcoal);
+    padding:40px;display:flex;justify-content:center;gap:80px;flex-wrap:wrap;
+    background:var(--near-black);
+  }
+
+  /* PIPELINE SECTION */
+  .pipeline-section{position:relative;z-index:1;border-top:1px solid var(--charcoal);padding:72px 40px;background:var(--near-black);}
+  .pipeline-row{
+    display:flex;align-items:flex-start;gap:0;
+    max-width:1100px;margin:0 auto;
+    overflow-x:auto;padding-bottom:8px;
+  }
+  .pipe-step{
+    flex:1;min-width:160px;padding:0 16px;
+    border-left:1px solid var(--charcoal);
+  }
+  .pipe-step:first-child{border-left:none;padding-left:0;}
+  .pipe-num{font-size:11px;font-weight:700;letter-spacing:1.4px;color:var(--neon);margin-bottom:8px;}
+  .pipe-title{font-size:14px;font-weight:700;color:var(--white);margin-bottom:6px;}
+  .pipe-desc{font-size:12px;color:var(--silver);line-height:1.6;}
+  .pipe-arrow{font-size:20px;color:var(--deep);padding:0 4px;margin-top:8px;flex-shrink:0;align-self:flex-start;}
+
+  @media(max-width:700px){
+    .pipeline-section{padding:48px 20px;}
+    .pipeline-row{flex-direction:column;gap:0;}
+    .pipe-step{border-left:none;border-top:1px solid var(--charcoal);padding:16px 0;min-width:unset;}
+    .pipe-step:first-child{border-top:none;padding-top:0;}
+    .pipe-arrow{display:none;}
+  }
+
+  /* FOOTER */
+  .landing-footer{
+    position:relative;z-index:1;
+    border-top:1px solid var(--charcoal);padding:28px 40px;
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
+  }
+  .footer-brand{font-size:13px;font-weight:900;color:var(--white);}
+  .footer-sub{font-size:11px;color:var(--silver);margin-top:2px;}
+  .footer-tech{font-size:11px;color:var(--silver);}
+
+  @media(max-width:700px){
+    .landing-hero{padding:40px 20px;}
+    .features-section{padding:48px 20px;}
+    .stats-bar{gap:40px;padding:32px 20px;}
+    .landing-footer{padding:24px 20px;}
+    .hero-ctas{flex-direction:column;}
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<canvas id="bg-canvas"></canvas>
+
+<!-- HERO -->
+<div class="landing-hero">
+  <div>
+    <div class="hero-label">AI-Powered · ML-Driven · Indian Law</div>
+    <h1 class="hero-h1">Nyaya Sahayak<br><span class="accent">Legal AI</span> Platform</h1>
+    <p class="hero-p">Analyze Supreme Court judgments, predict case outcomes, find similar precedents, and get AI-powered legal insights — all in one platform.</p>
+    <div class="hero-ctas">
+      <a href="{% url 'register' %}" class="btn-hero-primary"><i class="bi bi-person-plus"></i> Get Started</a>
+      <a href="{% url 'login' %}" class="btn-hero-ghost"><i class="bi bi-box-arrow-in-right"></i> Login</a>
+    </div>
+    <div class="hero-stats">
+      <div><div class="stat-num">400<span>+</span></div><div class="stat-label">Judgments</div></div>
+      <div><div class="stat-num">85<span>%</span></div><div class="stat-label">ML Accuracy</div></div>
+      <div><div class="stat-num">768<span>d</span></div><div class="stat-label">InLegalBERT</div></div>
+      <div><div class="stat-num">3</div><div class="stat-label">AI Models</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- STATS BAR -->
+<div class="stats-bar">
+  <div style="text-align:center;">
+    <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--silver);margin-bottom:4px;">Access</div>
+    <div style="font-size:12px;color:var(--white);display:flex;align-items:center;gap:6px;"><i class="bi bi-shield-check" style="color:var(--neon);"></i>Admin-approved accounts</div>
+  </div>
+  <div style="text-align:center;">
+    <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--silver);margin-bottom:4px;">AI Stack</div>
+    <div style="font-size:12px;color:var(--white);display:flex;align-items:center;gap:6px;"><i class="bi bi-stars" style="color:var(--neon);"></i>Cohere + OCI GenAI</div>
+  </div>
+  <div style="text-align:center;">
+    <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--silver);margin-bottom:4px;">ML Model</div>
+    <div style="font-size:12px;color:var(--white);display:flex;align-items:center;gap:6px;"><i class="bi bi-diagram-3" style="color:var(--neon);"></i>InLegalBERT embeddings</div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<div class="features-section">
+  <div class="section-label-row">
+    <div class="section-overline">Platform Features</div>
+    <h2 class="section-h2">Everything for AI Legal Analysis</h2>
+  </div>
+  <div class="feat-grid">
+
+    <div class="feat-card">
+      <svg class="feat-svg" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="5" y="3" width="14" height="18" rx="2" stroke="#faff69" stroke-width="1.5"/>
+        <path d="M9 8h6M9 12h6M9 16h4" stroke="#faff69" stroke-width="1.3" stroke-linecap="round"/>
+        <circle cx="20" cy="20" r="5" fill="#000" stroke="#faff69" stroke-width="1.3"/>
+        <path d="M18 20h4M20 18v4" stroke="#faff69" stroke-width="1.3" stroke-linecap="round"/>
+      </svg>
+      <div class="feat-title">Case Analyzer</div>
+      <div class="feat-desc">Upload Supreme Court PDFs or paste judgment text. Extracts parties, sections, outcome, and category using a rule-based ML pipeline with AI correction.</div>
+    </div>
+
+    <div class="feat-card">
+      <svg class="feat-svg" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <line x1="14" y1="4" x2="14" y2="24" stroke="#faff69" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="5" y1="9" x2="23" y2="9" stroke="#faff69" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M5 9 C4 13 4 15 5 17 C6 19 8 19 9 17 C10 15 10 13 9 9" stroke="#faff69" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+        <path d="M19 9 C18 13 18 15 19 17 C20 19 22 19 23 17 C24 15 24 13 23 9" stroke="#faff69" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+        <line x1="10" y1="24" x2="18" y2="24" stroke="#faff69" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <div class="feat-title">Lincoln Lawyer</div>
+      <div class="feat-desc">Standalone AI legal assistant for Indian law. Ask about procedures, fundamental rights, bail, appeals, and Supreme Court judgments — no case upload needed.</div>
+    </div>
+
+    <div class="feat-card">
+      <svg class="feat-svg" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="4" y="18" width="4" height="6" rx="1" stroke="#faff69" stroke-width="1.4"/>
+        <rect x="12" y="12" width="4" height="12" rx="1" stroke="#faff69" stroke-width="1.4"/>
+        <rect x="20" y="6" width="4" height="18" rx="1" stroke="#faff69" stroke-width="1.4"/>
+        <path d="M6 14l6-4 8-6" stroke="#faff69" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div class="feat-title">ML Outcome Prediction</div>
+      <div class="feat-desc">Logistic Regression on InLegalBERT embeddings predicts Allowed or Dismissed with a calibrated confidence score. Finds top-5 similar precedents via cosine similarity.</div>
+    </div>
+
+    <div class="feat-card">
+      <svg class="feat-svg" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M14 4l2.5 5 5.5.8-4 3.9.9 5.5L14 16.5l-4.9 2.7.9-5.5-4-3.9 5.5-.8L14 4z" stroke="#faff69" stroke-width="1.4" stroke-linejoin="round"/>
+      </svg>
+      <div class="feat-title">AI Field Correction</div>
+      <div class="feat-desc">Single Cohere call corrects garbled extraction fields and generates a plain-English case summary. Runs only when rule-based extraction detects issues.</div>
+    </div>
+
+    <div class="feat-card">
+      <svg class="feat-svg" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M8 14h12M8 10h8M8 18h6" stroke="#faff69" stroke-width="1.4" stroke-linecap="round"/>
+        <rect x="4" y="5" width="20" height="18" rx="2" stroke="#faff69" stroke-width="1.4"/>
+        <circle cx="22" cy="22" r="4" fill="#000" stroke="#faff69" stroke-width="1.3"/>
+        <path d="M20.5 22l1 1 2-2" stroke="#faff69" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div class="feat-title">Case Context Chatbot</div>
+      <div class="feat-desc">After analysis, ask for risk assessment, next steps, legal arguments, ELI5 explanations, or comparisons — the chatbot has full case context from the session.</div>
+    </div>
+
+    <div class="feat-card">
+      <svg class="feat-svg" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="14" cy="10" r="4" stroke="#faff69" stroke-width="1.4"/>
+        <path d="M6 24c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="#faff69" stroke-width="1.4" stroke-linecap="round"/>
+        <path d="M21 5l2 2-2 2" stroke="#faff69" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M23 7h-4" stroke="#faff69" stroke-width="1.3" stroke-linecap="round"/>
+      </svg>
+      <div class="feat-title">Role-Based Access</div>
+      <div class="feat-desc">Admin-approved accounts with granular roles. Staff can approve users, assign Case Analyzer or Lincoln Lawyer access, and toggle AI services live.</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<div class="pipeline-section">
+  <div class="section-label-row">
+    <div class="section-overline">Under the Hood</div>
+    <h2 class="section-h2">How the Pipeline Works</h2>
+  </div>
+  <div class="pipeline-row">
+    <div class="pipe-step">
+      <div class="pipe-num">01</div>
+      <div class="pipe-title">Upload</div>
+      <div class="pipe-desc">PDF via pdfminer / pdfplumber, or raw text paste. Document validated as a real court judgment before processing.</div>
+    </div>
+    <div class="pipe-arrow">›</div>
+    <div class="pipe-step">
+      <div class="pipe-num">02</div>
+      <div class="pipe-title">Extract</div>
+      <div class="pipe-desc">Rule-based extraction of parties, date, case number, 40+ legal sections, outcome, and category from the judgment text.</div>
+    </div>
+    <div class="pipe-arrow">›</div>
+    <div class="pipe-step">
+      <div class="pipe-num">03</div>
+      <div class="pipe-title">AI Correct</div>
+      <div class="pipe-desc">Single Cohere call fixes any extraction errors and generates a plain-English summary. Only fires when issues are detected.</div>
+    </div>
+    <div class="pipe-arrow">›</div>
+    <div class="pipe-step">
+      <div class="pipe-num">04</div>
+      <div class="pipe-title">ML Predict</div>
+      <div class="pipe-desc">InLegalBERT encodes the case text into 768-dim embeddings. Logistic Regression predicts outcome with confidence score.</div>
+    </div>
+    <div class="pipe-arrow">›</div>
+    <div class="pipe-step">
+      <div class="pipe-num">05</div>
+      <div class="pipe-title">Results</div>
+      <div class="pipe-desc">Full analysis displayed with similar cases, ML insights, and the Lincoln Lawyer chatbot pre-loaded with case context.</div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="landing-footer">
+  <div>
+    <div class="footer-brand">⚖ Nyaya Sahayak</div>
+    <div class="footer-sub">Next Utility Computing · AI-Powered Legal Analysis Platform</div>
+  </div>
+  <div class="footer-tech">Django · InLegalBERT · Cohere · Oracle Cloud AI</div>
+</div>
+
+<script src="{% static 'js/upload.js' %}"></script>
+{% endblock %}

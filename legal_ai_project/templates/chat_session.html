@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ session.title }} — NUC Legal AI{% endblock %}
+
+{% block content %}
+<div class="page-shell">
+
+  <!-- Header -->
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1.25rem;flex-wrap:wrap;">
+    <div>
+      <div class="page-title" style="margin-bottom:4px;">
+        <span class="history-badge {% if session.mode == 'case' %}badge-case{% else %}badge-lincoln{% endif %}" style="margin-right:8px;font-size:11px;">
+          {{ session.get_mode_display }}
+        </span>
+        {{ session.title|default:"Untitled Session" }}
+      </div>
+      <div class="page-sub">{{ session.created_at|date:"d M Y, H:i" }}</div>
+    </div>
+    <a href="{% url 'chat_history' %}" class="btn btn-ghost" style="font-size:12px;">
+      <i class="bi bi-arrow-left"></i> History
+    </a>
+  </div>
+
+  <!-- Attached file -->
+  {% if session.uploaded_case %}
+  <div style="background:var(--near-black);border:1px solid var(--charcoal);border-radius:8px;padding:10px 16px;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;">
+    <span style="font-size:13px;color:var(--silver);">
+      <i class="bi bi-file-earmark-pdf" style="color:var(--neon);margin-right:6px;"></i>
+      {{ session.uploaded_case.filename }}
+    </span>
+    <a href="{% url 'download_case' session.uploaded_case.pk %}" class="btn btn-ghost" style="font-size:12px;">
+      <i class="bi bi-download"></i> Download
+    </a>
+  </div>
+  {% endif %}
+
+  <!-- Messages -->
+  <div style="display:flex;flex-direction:column;gap:.6rem;">
+    {% for msg in messages %}
+    <div style="display:flex;{% if msg.sender == 'user' %}justify-content:flex-end{% else %}justify-content:flex-start{% endif %};">
+      <div style="
+        max-width:78%;
+        padding:10px 14px;
+        border-radius:12px;
+        font-size:13px;
+        line-height:1.6;
+        white-space:pre-wrap;
+        word-break:break-word;
+        {% if msg.sender == 'user' %}
+          background:var(--neon);color:var(--black);border-bottom-right-radius:3px;
+        {% else %}
+          background:var(--near-black);color:var(--white);border:1px solid var(--charcoal);border-bottom-left-radius:3px;
+        {% endif %}
+      ">
+        {{ msg.message }}
+        <div style="font-size:10px;margin-top:5px;opacity:.55;text-align:right;">{{ msg.created_at|date:"H:i" }}</div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="empty-state">
+      <i class="bi bi-chat-square-dots"></i>
+      <p>No messages in this session.</p>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}
