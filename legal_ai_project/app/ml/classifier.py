@@ -42,8 +42,15 @@ def load_classifier():
         import joblib
         _clf = joblib.load(mp)
         logger.info(f"Classifier loaded from {mp}")
-    except Exception as e:
-        logger.error(f"load_classifier failed: {e}")
+    except BaseException as e:
+        logger.error(f"load_classifier failed: {e} — ML prediction disabled")
+        _clf = None
+    return _clf
+        logger.error(
+            f"load_classifier failed: {e}. "
+            "This usually means model.pkl was trained on a different Python/sklearn version. "
+            "Run: python manage.py build_ml --train-only  to retrain."
+        )
         _clf = None
     return _clf
 

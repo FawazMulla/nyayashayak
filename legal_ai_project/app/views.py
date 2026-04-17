@@ -119,15 +119,15 @@ def analyze_case(request):
     try:
         from .ml.classifier import predict
         ml_label, ml_conf = predict(result.get("input_text", "") or raw_text[:512])
-    except Exception:
-        pass  # graceful — ML artefacts may not be built yet
+    except BaseException:
+        pass  # catches SystemExit from broken pickle/sklearn on wrong Python version
 
     # ── ML: similarity search ─────────────────────────────────────────────────
     similar_cases = []
     try:
         from .ml.similarity import find_similar
         similar_cases = find_similar(result.get("input_text", "") or raw_text[:512], top_k=5)
-    except Exception:
+    except BaseException:
         pass
 
     # ── Confidence display ────────────────────────────────────────────────────
