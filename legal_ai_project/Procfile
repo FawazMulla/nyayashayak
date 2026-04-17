@@ -1,1 +1,1 @@
-web: gunicorn legal_ai_project.wsgi --log-file -
+web: gunicorn legal_ai_project.wsgi --bind 0.0.0.0:$PORT --timeout 120 --workers 1 --log-file -
