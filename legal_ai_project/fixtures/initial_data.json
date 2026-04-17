@@ -1,0 +1,173 @@
+﻿[
+{
+  "model": "app.user",
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$ZirL20XkTNDhbUhwX41YxY$1clq6xqLCZYx0o4ONFYZhoTyBVjCv7gkr9kD1UFt5Ts=",
+    "last_login": "2026-04-16T19:57:26.716Z",
+    "is_superuser": true,
+    "username": "admin",
+    "first_name": "",
+    "last_name": "",
+    "email": "admin@nuc.ai",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2026-04-16T19:03:24.831Z",
+    "role": "both",
+    "is_approved": true,
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "app.user",
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$wCCQhGDrs7DYZ0ffNTidLP$b9Y1BwC7mdl/w+RxxB6yRt2DvBPQai0YovMdUOYCRDo=",
+    "last_login": "2026-04-16T20:26:06.060Z",
+    "is_superuser": false,
+    "username": "fawaz",
+    "first_name": "",
+    "last_name": "",
+    "email": "fawazmulla5@gmail.com",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-04-16T19:56:41.295Z",
+    "role": "both",
+    "is_approved": true,
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "app.aisettings",
+  "pk": 1,
+  "fields": {
+    "cohere_enabled": true,
+    "oci_enabled": true,
+    "updated_at": "2026-04-16T19:09:04.301Z"
+  }
+},
+{
+  "model": "app.uploadedcase",
+  "pk": 1,
+  "fields": {
+    "user": [
+      "fawaz"
+    ],
+    "file": "uploads/96dd3c75afe24ce18c0e690bbc1f0ea6/Abhishek_Banerjee_vs_Directorate_Of_Enforcement_on_9_September_2024_1.PDF",
+    "filename": "Abhishek_Banerjee_vs_Directorate_Of_Enforcement_on_9_September_2024_1.PDF",
+    "uploaded_at": "2026-04-16T20:22:21.243Z"
+  }
+},
+{
+  "model": "app.chatsession",
+  "pk": 1,
+  "fields": {
+    "user": [
+      "fawaz"
+    ],
+    "title": "hello",
+    "mode": "lincoln",
+    "uploaded_case": null,
+    "created_at": "2026-04-16T19:59:21.819Z",
+    "updated_at": "2026-04-16T19:59:21.827Z"
+  }
+},
+{
+  "model": "app.chatsession",
+  "pk": 2,
+  "fields": {
+    "user": [
+      "fawaz"
+    ],
+    "title": "my bike is stoeln",
+    "mode": "lincoln",
+    "uploaded_case": null,
+    "created_at": "2026-04-16T20:19:51.770Z",
+    "updated_at": "2026-04-16T20:19:51.781Z"
+  }
+},
+{
+  "model": "app.chatsession",
+  "pk": 3,
+  "fields": {
+    "user": [
+      "fawaz"
+    ],
+    "title": "Abhishek Banerjee",
+    "mode": "case",
+    "uploaded_case": 1,
+    "created_at": "2026-04-16T20:23:26.473Z",
+    "updated_at": "2026-04-16T20:24:15.545Z"
+  }
+},
+{
+  "model": "app.chatmessage",
+  "pk": 1,
+  "fields": {
+    "session": 1,
+    "sender": "user",
+    "message": "hello",
+    "created_at": "2026-04-16T19:59:21.821Z"
+  }
+},
+{
+  "model": "app.chatmessage",
+  "pk": 2,
+  "fields": {
+    "session": 1,
+    "sender": "ai",
+    "message": "Greetings. I am Lincoln Lawyer AI, here to provide general legal insights based on Indian law and Supreme Court judgments. If your question is unrelated to law, I will politely decline. Please proceed with your legal query.\n\nΓÜá∩╕Å General legal information only. Not legal advice ΓÇö consult a qualified lawyer.",
+    "created_at": "2026-04-16T19:59:21.826Z"
+  }
+},
+{
+  "model": "app.chatmessage",
+  "pk": 3,
+  "fields": {
+    "session": 2,
+    "sender": "user",
+    "message": "my bike is stoeln",
+    "created_at": "2026-04-16T20:19:51.776Z"
+  }
+},
+{
+  "model": "app.chatmessage",
+  "pk": 4,
+  "fields": {
+    "session": 2,
+    "sender": "ai",
+    "message": "In the unfortunate event of your bike being stolen, immediate action is crucial. First, file a First Information Report (FIR) at the nearest police station under Section 379 of the Indian Penal Code, which deals with theft. Provide all necessary details, including the bikeΓÇÖs make, model, registration number, and any unique identifiers. Timely reporting increases the chances of recovery.  \n\nSecond, inform your insurance company if you have a comprehensive policy covering theft. Submit the FIR and required documents to initiate the claim process. If uninsured, consider legal recourse under Section 91 of the Code of Criminal Procedure for recovery of stolen property.  \n\nLastly, monitor online marketplaces and local areas where stolen vehicles are often resold. Cooperate with police investigations and seek legal assistance if needed.  \n\nΓÜá∩╕Å General legal information only. Not legal advice ΓÇö consult a qualified lawyer.",
+    "created_at": "2026-04-16T20:19:51.780Z"
+  }
+},
+{
+  "model": "app.chatmessage",
+  "pk": 5,
+  "fields": {
+    "session": 3,
+    "sender": "ai",
+    "message": "≡ƒôï Case Summary:\nThis is a Supreme Court judgment in a criminal appeal filed by Abhishek Banerjee and Rujira Banerjee against the Directorate of Enforcement (ED). The appellants challenged the summons issued by the ED under the Prevention of Money Laundering Act (PMLA) and sought to quash the complaint filed against them under the Indian Penal Code (IPC). The main legal issue revolves around the validity of the summons and the jurisdiction of the ED to issue them in New Delhi instead of the appellants' hometown, Kolkata. The High Court dismissed the appellants' writ petition and criminal miscellaneous case, leading to this appeal before the Supreme Court.",
+    "created_at": "2026-04-16T20:23:26.478Z"
+  }
+},
+{
+  "model": "app.chatmessage",
+  "pk": 6,
+  "fields": {
+    "session": 3,
+    "sender": "user",
+    "message": "what isthis case about",
+    "created_at": "2026-04-16T20:24:15.508Z"
+  }
+},
+{
+  "model": "app.chatmessage",
+  "pk": 7,
+  "fields": {
+    "session": 3,
+    "sender": "ai",
+    "message": "This case centers around a criminal appeal filed by Abhishek Banerjee and Rujira Banerjee against the Directorate of Enforcement (ED). The appellants challenge the validity of summons issued by the ED under the Prevention of Money Laundering Act (PMLA) and seek to quash a complaint filed against them under the Indian Penal Code (IPC). The core legal issue is whether the ED had jurisdiction to issue the summons in New Delhi, rather than the appellants' hometown of Kolkata.  \n\nThe High Court dismissed the appellants' writ petition and criminal miscellaneous case, prompting this appeal to the Supreme Court. The outcome of the case was dismissal, meaning the Supreme Court upheld the High Court's decision.  \n\nThe case involves multiple sections of the IPC, CrPC, and PMLA, reflecting complex legal arguments around jurisdiction, procedural validity, and the authority of the ED. The appellants' challenge was ultimately unsuccessful, with the Supreme Court affirming the ED's actions.",
+    "created_at": "2026-04-16T20:24:15.543Z"
+  }
+}
+]
