@@ -61,6 +61,7 @@ GitHub gives **1GB free LFS storage** — enough for this model.
 SECRET_KEY=<generate a new strong key>
 DEBUG=false
 ALLOWED_HOSTS=your-app-name.onrender.com
+CSRF_TRUSTED_ORIGINS=https://your-app-name.onrender.com
 DATABASE_URL=<from Render PostgreSQL>
 COHERE_API_KEY=<your key>
 AI_CORRECTION_ENABLED=true
@@ -74,9 +75,24 @@ OCI_COMPARTMENT_ID=<your compartment>
 OCI_CHAT_MODEL_ID=cohere.command-a-03-2025
 SITE_URL=https://your-app-name.onrender.com
 EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
-EMAIL_HOST_USER=<your email>
-EMAIL_HOST_PASSWORD=<app password>
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USE_TLS=true
+EMAIL_HOST_USER=fawaz.tech21@gmail.com
+EMAIL_HOST_PASSWORD=<your gmail app password>
+DEFAULT_FROM_EMAIL=NUC Legal AI <fawaz.tech21@gmail.com>
+DB_NAME=nuc_legal_ai
+DB_USER=postgres
+DB_PASSWORD=<your pg password>
+DB_HOST=localhost
+DB_PORT=5432
 ```
+
+> **Note on SMTP:** Gmail SMTP works directly from Render — no local mail server needed.
+> Render servers connect outbound to `smtp.gmail.com:587` just like your local machine does.
+> Make sure your Gmail account has 2FA enabled and you're using an **App Password**
+> (not your regular Gmail password). Generate one at:
+> Google Account → Security → 2-Step Verification → App passwords
 
 ### 4. OCI Private Key on Render
 Render has a "Secret Files" feature:

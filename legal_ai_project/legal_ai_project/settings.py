@@ -8,7 +8,27 @@ load_dotenv(BASE_DIR / ".env")
 
 SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-kakifjr5@cd^t9tla1#ga)v_l-#8b&axpv&7eqiwam&b7tdm$3")
 DEBUG      = os.environ.get("DEBUG", "true").lower() == "true"
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "*").split(",")
+
+# ALLOWED_HOSTS — comma-separated list in env var
+# e.g. ALLOWED_HOSTS=your-app.onrender.com,localhost,127.0.0.1
+# Defaults to * in DEBUG mode, locked down in production via env var
+_raw_hosts = os.environ.get("ALLOWED_HOSTS", "*" if DEBUG else "")
+ALLOWED_HOSTS = [h.strip() for h in _raw_hosts.split(",") if h.strip()]
+
+# Always allow Render's internal health check host
+if not DEBUG:
+    ALLOWED_HOSTS += [".onrender.com", "localhost", "127.0.0.1"]
+
+# CSRF — must include your Render URL so forms work in production
+_raw_origins = os.environ.get(
+    "CSRF_TRUSTED_ORIGINS",
+    "http://localhost:8000,http://127.0.0.1:8000"
+)
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+
+# In production always trust all onrender.com subdomains
+if not DEBUG:
+    CSRF_TRUSTED_ORIGINS.append("https://*.onrender.com")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
