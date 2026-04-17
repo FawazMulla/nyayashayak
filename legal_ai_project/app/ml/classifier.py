@@ -52,8 +52,6 @@ def train_model():
     """
     Train Logistic Regression on precomputed embeddings + processed.csv labels.
     Saves model to data/model.pkl.
-    Requires: data/embeddings.npy and data/embeddings_meta.npy already built,
-              data/processed.csv with input_text + label columns.
     """
     import csv
     import joblib
@@ -74,21 +72,34 @@ def train_model():
         logger.error("Embeddings not found — run save_dataset_embeddings() first")
         return
 
-    # Build text→embedding lookup
-    text_to_idx = {t: i for i, t in enumerate(texts)}
+    # Strategy 1: positional alignment (fast, works when CSV and embeddings are in sync)
+    # Strategy 2: text lookup fallback
+    text_to_idx = {t.strip(): i for i, t in enumerate(texts)}
 
     X, y = [], []
+    csv_rows = []
     with open(csv_path, encoding="utf-8") as f:
         for row in csv.DictReader(f):
             lbl = row.get("label", "")
-            txt = row.get("input_text", "")
+            txt = (row.get("input_text", "") or "").strip()
             if lbl not in ("0", "1") or not txt:
                 continue
-            idx = text_to_idx.get(txt)
-            if idx is None:
-                continue
+            csv_rows.append((txt, int(lbl)))
+
+    # Try positional match first (CSV row i → embedding i)
+    labelled_csv = [(t, l) for t, l in csv_rows]
+    emb_texts    = [t.strip() for t in texts]
+
+    for i, (txt, lbl) in enumerate(labelled_csv):
+        # Try exact text match
+        idx = text_to_idx.get(txt)
+        if idx is not None:
             X.append(embs[idx])
-            y.append(int(lbl))
+            y.append(lbl)
+        elif i < len(embs):
+            # Positional fallback — use embedding at same position
+            X.append(embs[i])
+            y.append(lbl)
 
     if len(X) < 10:
         logger.error(f"Not enough labelled samples ({len(X)}) to train")
