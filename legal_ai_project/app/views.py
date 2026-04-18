@@ -114,21 +114,21 @@ def analyze_case(request):
     # ── Hybrid correction + AI summary (single Cohere call) ───────────────────
     result = hybrid_correction(result, raw_text)
 
-    # ── ML: prediction ────────────────────────────────────────────────────────
-    ml_label, ml_conf = None, None
-    try:
-        from .ml.classifier import predict
-        ml_label, ml_conf = predict(result.get("input_text", "") or raw_text[:512])
-    except Exception:
-        pass  # graceful — ML artefacts may not be built yet
+    # ── ML: prediction + similarity ───────────────────────────────────────────
+    ml_label, ml_conf, similar_cases = None, None, []
 
-    # ── ML: similarity search ─────────────────────────────────────────────────
-    similar_cases = []
-    try:
-        from .ml.similarity import find_similar
-        similar_cases = find_similar(result.get("input_text", "") or raw_text[:512], top_k=5)
-    except Exception:
-        pass
+    if getattr(settings, "ML_ENABLED", True):
+        try:
+            from .ml.classifier import predict
+            ml_label, ml_conf = predict(result.get("input_text", "") or raw_text[:512])
+        except BaseException:
+            pass
+
+        try:
+            from .ml.similarity import find_similar
+            similar_cases = find_similar(result.get("input_text", "") or raw_text[:512], top_k=5)
+        except BaseException:
+            pass
 
     # ── Confidence display ────────────────────────────────────────────────────
     # Prefer ML model confidence; fall back to rule-based random if model not ready

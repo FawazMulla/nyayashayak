@@ -8,7 +8,15 @@ load_dotenv(BASE_DIR / ".env")
 
 SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-kakifjr5@cd^t9tla1#ga)v_l-#8b&axpv&7eqiwam&b7tdm$3")
 DEBUG      = os.environ.get("DEBUG", "true").lower() == "true"
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "*").split(",")
+
+_raw_hosts = os.environ.get("ALLOWED_HOSTS", "*")
+ALLOWED_HOSTS = [h.strip() for h in _raw_hosts.split(",") if h.strip()]
+
+_raw_origins = os.environ.get("CSRF_TRUSTED_ORIGINS", "http://localhost:8000")
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+
+# ML — enabled by default (OCI VM has enough RAM), set ML_ENABLED=false on low-memory hosts
+ML_ENABLED = os.environ.get("ML_ENABLED", "true").lower() == "true"
 
 INSTALLED_APPS = [
     "django.contrib.admin",
