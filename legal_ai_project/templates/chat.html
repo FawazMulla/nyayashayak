@@ -99,7 +99,23 @@
 <script src="{% static 'js/chatbot.js' %}"></script>
 <script>
   Chatbot.init(
-    '⚖️  Hello! I\'m Lincoln Lawyer, your AI Legal Assistant specialising in Indian law and Supreme Court judgments.\n\nI can help you understand legal procedures, explain your rights, analyse cases, or answer any legal question. What would you like to know?'
+    '⚖️  Hello! I\'m Lincoln Lawyer, your AI Legal Assistant specialising in Indian law and Supreme Court judgments.\n\nI can help you understand legal procedures, explain your rights, analyse cases, or answer any legal question.\n\nTry asking: "What are my rights if arrested?" or click a quick action above.'
   );
+
+  // Subtle pulse on quick action buttons to draw attention
+  (function () {
+    var btns = document.querySelectorAll('.chat-page-quick .qbtn');
+    btns.forEach(function (btn, i) {
+      btn.style.animationDelay = (i * 0.08) + 's';
+      btn.classList.add('qbtn-appear');
+    });
+  })();
 </script>
+<style>
+@keyframes qbtnAppear {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.qbtn-appear { animation: qbtnAppear .4s ease both; }
+</style>
 {% endblock %}

@@ -189,8 +189,12 @@ def analyze_case(request):
         "similar_cases": similar_cases,
     }
 
+    # Pre-split sections for template (avoids custom template filter)
+    sections_list = [s.strip() for s in result.get("sections", "").split(",") if s.strip()] if result.get("sections") else []
+
     return render(request, "result.html", {
         "result": result,
+        "sections_list": sections_list,
         "chat_session_id": chat_session.pk if chat_session else None,
         "uploaded_case_id": uploaded_case_obj.pk if uploaded_case_obj else None,
     })
@@ -289,7 +293,42 @@ def logout_view(request):
 
 @login_required
 def dashboard(request):
-    return render(request, "dashboard.html", {"user": request.user})
+    # ── Stats for dashboard ───────────────────────────────────────────────────
+    total_cases    = UploadedCase.objects.filter(user=request.user).count()
+    total_sessions = ChatSession.objects.filter(user=request.user).count()
+    recent_sessions = ChatSession.objects.filter(user=request.user).order_by("-updated_at")[:6]
+
+    # Outcome + category distribution from processed.json
+    allowed_count = dismissed_count = 0
+    category_counts = []
+    total_dataset = 0
+    try:
+        import json
+        from django.conf import settings as dj_settings
+        from pathlib import Path
+        json_path = Path(dj_settings.DATA_DIR) / "processed.json"
+        if json_path.exists():
+            data = json.loads(json_path.read_text(encoding="utf-8"))
+            allowed_count   = sum(1 for r in data if str(r.get("label")) == "1")
+            dismissed_count = sum(1 for r in data if str(r.get("label")) == "0")
+            total_dataset   = len(data)
+            # Top 4 categories
+            from collections import Counter
+            cats = Counter(r.get("category", "Other") for r in data if r.get("category"))
+            category_counts = [{"name": k, "count": v} for k, v in cats.most_common(4)]
+    except Exception:
+        pass
+
+    return render(request, "dashboard.html", {
+        "user":             request.user,
+        "total_cases":      total_cases,
+        "total_sessions":   total_sessions,
+        "recent_sessions":  recent_sessions,
+        "allowed_count":    allowed_count,
+        "dismissed_count":  dismissed_count,
+        "total_dataset":    total_dataset,
+        "category_counts":  category_counts,
+    })
 
 
 @login_required

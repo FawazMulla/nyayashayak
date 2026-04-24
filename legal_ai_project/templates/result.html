@@ -11,62 +11,217 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
   <link rel="stylesheet" href="{% static 'css/base.css' %}"/>
   <link rel="stylesheet" href="{% static 'css/result.css' %}"/>
+  <link rel="stylesheet" href="{% static 'css/result_enhanced.css' %}"/>
 </head>
 <body>
 
-<!-- NAV -->
 <nav class="nav">
   <a class="nav-logo" href="/"><span class="dot"></span>Nyaya Sahayak</a>
   <div class="nav-links">
-    <a class="nav-link" href="/"><i class="bi bi-upload"></i> Analyze</a>
-    <a class="nav-link" href="/chat/"><i class="bi bi-chat-dots"></i> Lincoln Lawyer</a>
+    <a class="nav-link" href="/upload/"><i class="bi bi-upload"></i> Analyze</a>
+    <a class="nav-link" href="/chat/"><i class="bi bi-scales"></i> Lincoln Lawyer</a>
+    <a class="nav-link" href="/history/"><i class="bi bi-clock-history"></i> History</a>
   </div>
   <div class="nav-right">
-    <a href="/" class="btn btn-back"><i class="bi bi-arrow-left"></i> New Analysis</a>
+    <a href="/upload/" class="btn btn-back"><i class="bi bi-plus"></i> New Analysis</a>
   </div>
 </nav>
 
-<!-- TOP BAR -->
 <div class="top-bar">
-  <span class="top-bar-title">Case Analysis Report</span>
+  <span class="top-bar-title">
+    {% if result.appellant and result.appellant != "N/A" %}{{ result.appellant|truncatechars:40 }}{% else %}Case Analysis Report{% endif %}
+  </span>
   <div class="top-bar-meta">
-    <span style="font-size:11px;color:var(--silver);">Nyaya Sahayak ML Pipeline</span>
+    {% if result.judgment_date and result.judgment_date != "N/A" %}
+      <span style="font-size:11px;color:var(--silver);"><i class="bi bi-calendar3"></i> {{ result.judgment_date }}</span>
+    {% endif %}
     {% if result.ai_corrected %}
-      <span class="tag tag-purple"><i class="bi bi-stars"></i> AI Corrected: {{ result.ai_corrected_fields|join:", " }}</span>
+      <span class="tag tag-purple"><i class="bi bi-stars"></i> AI Corrected</span>
     {% elif result.ai_skip_reason and "no issues" not in result.ai_skip_reason %}
-      <span class="tag tag-yellow"><i class="bi bi-exclamation-triangle"></i> Rule-based ({{ result.ai_skip_reason }})</span>
+      <span class="tag tag-yellow"><i class="bi bi-exclamation-triangle"></i> Rule-based</span>
     {% else %}
-      <span class="tag tag-green"><i class="bi bi-check-circle"></i> Rule-based · No issues</span>
+      <span class="tag tag-green"><i class="bi bi-check-circle"></i> Validated</span>
+    {% endif %}
+    {% if result.label_source == "ml_model" %}
+      <span class="tag tag-yellow"><i class="bi bi-cpu"></i> InLegalBERT</span>
     {% endif %}
   </div>
 </div>
 
-<!-- DASHBOARD -->
 <div class="dashboard">
-
-  <!-- LEFT: DATA PANELS -->
   <div class="left-col">
 
-    <!-- CASE SUMMARY -->
+    <!-- VERDICT HERO -->
+    {% if result.ml_label == 1 or result.label == 1 %}
+    <div class="verdict-hero favorable">
+      <div class="verdict-icon">✅</div>
+      <div class="verdict-body">
+        <div class="verdict-label">ML Prediction</div>
+        <div class="verdict-outcome">{{ result.outcome_display }}</div>
+        <div class="verdict-sub">{{ result.category|default:"Unknown" }} &middot; {{ result.case_id|default:"" }}</div>
+      </div>
+      <div class="conf-ring-wrap">
+        <div class="conf-ring">
+          <svg width="64" height="64" viewBox="0 0 64 64">
+            <circle class="conf-ring-bg" cx="32" cy="32" r="26"/>
+            <circle class="conf-ring-fill favorable" id="ring-fill" cx="32" cy="32" r="26"/>
+          </svg>
+          <div class="conf-ring-text">{{ result.confidence }}</div>
+        </div>
+        <div class="conf-ring-label">Confidence</div>
+      </div>
+    </div>
+    {% elif result.ml_label == 0 or result.label == 0 %}
+    <div class="verdict-hero unfavorable">
+      <div class="verdict-icon">❌</div>
+      <div class="verdict-body">
+        <div class="verdict-label">ML Prediction</div>
+        <div class="verdict-outcome">{{ result.outcome_display }}</div>
+        <div class="verdict-sub">{{ result.category|default:"Unknown" }} &middot; {{ result.case_id|default:"" }}</div>
+      </div>
+      <div class="conf-ring-wrap">
+        <div class="conf-ring">
+          <svg width="64" height="64" viewBox="0 0 64 64">
+            <circle class="conf-ring-bg" cx="32" cy="32" r="26"/>
+            <circle class="conf-ring-fill unfavorable" id="ring-fill" cx="32" cy="32" r="26"/>
+          </svg>
+          <div class="conf-ring-text">{{ result.confidence }}</div>
+        </div>
+        <div class="conf-ring-label">Confidence</div>
+      </div>
+    </div>
+    {% else %}
+    <div class="verdict-hero neutral">
+      <div class="verdict-icon">⚖️</div>
+      <div class="verdict-body">
+        <div class="verdict-label">Outcome</div>
+        <div class="verdict-outcome">{{ result.outcome|default:"Undetermined" }}</div>
+        <div class="verdict-sub">{{ result.category|default:"Unknown" }}</div>
+      </div>
+      <div class="conf-ring-wrap">
+        <div class="conf-ring">
+          <svg width="64" height="64" viewBox="0 0 64 64">
+            <circle class="conf-ring-bg" cx="32" cy="32" r="26"/>
+            <circle class="conf-ring-fill neutral" id="ring-fill" cx="32" cy="32" r="26"/>
+          </svg>
+          <div class="conf-ring-text" style="font-size:11px;">N/A</div>
+        </div>
+        <div class="conf-ring-label">Confidence</div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- INSIGHT CARDS -->
+    <div class="insight-row">
+      <div class="insight-card">
+        <div class="insight-card-icon"><i class="bi bi-tags"></i></div>
+        <div class="insight-card-label">Category</div>
+        <div class="insight-card-value"><span class="badge-cat">{{ result.category|default:"Unknown" }}</span></div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-card-icon"><i class="bi bi-calendar3"></i></div>
+        <div class="insight-card-label">Judgment Date</div>
+        <div class="insight-card-value">{{ result.judgment_date|default:"N/A" }}</div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-card-icon"><i class="bi bi-file-text"></i></div>
+        <div class="insight-card-label">Word Count</div>
+        <div class="insight-card-value">{{ result.word_count|default:"0" }}</div>
+      </div>
+    </div>
+
+    <!-- AI SUMMARY -->
     <div class="block" id="block-summary">
       <div class="block-head" onclick="toggleBlock('block-summary')">
         <i class="bi bi-file-text icon"></i>
-        <span class="block-head-title">{% if result.ai_summary %}AI Summary{% else %}Case Summary{% endif %}</span>
+        <span class="block-head-title">{% if result.ai_summary %}AI Case Summary{% else %}Case Summary{% endif %}</span>
         {% if result.ai_summary %}<span class="tag tag-purple"><i class="bi bi-stars"></i> Cohere</span>
         {% else %}<span class="tag tag-muted">Rule-based</span>{% endif %}
-        <button class="btn btn-ghost" onclick="event.stopPropagation();openModal('modal-summary')" style="margin-left:6px;">
-          <i class="bi bi-arrows-fullscreen"></i> View Full
+        <button class="copy-btn" id="copy-summary-btn" onclick="event.stopPropagation();copySummary()" title="Copy summary">
+          <i class="bi bi-clipboard"></i> Copy
+        </button>
+        <button class="btn btn-ghost" onclick="event.stopPropagation();openModal('modal-summary')" style="margin-left:4px;">
+          <i class="bi bi-arrows-fullscreen"></i>
         </button>
         <i class="bi bi-chevron-down chevron"></i>
       </div>
       <div class="block-body">
         {% if result.ai_summary %}
-          <p class="summary-text">{{ result.ai_summary }}</p>
+          <div class="narrative-block"><p id="summary-text">{{ result.ai_summary }}</p></div>
         {% else %}
-          <div class="text-box">{{ result.input_text|default:"No text extracted." }}</div>
+          <div class="text-box" id="summary-text">{{ result.input_text|default:"No text extracted." }}</div>
         {% endif %}
       </div>
     </div>
+
+    <!-- CASE NARRATIVE FLOW -->
+    {% if result.ai_summary or result.input_text %}
+    <div class="block" id="block-narrative">
+      <div class="block-head" onclick="toggleBlock('block-narrative')">
+        <i class="bi bi-diagram-3 icon"></i>
+        <span class="block-head-title">Case Narrative</span>
+        <span class="tag tag-muted">Facts → Reasoning → Outcome</span>
+        <i class="bi bi-chevron-down chevron"></i>
+      </div>
+      <div class="block-body">
+        <div class="narrative-flow">
+          <div class="narrative-step">
+            <div class="narrative-step-left">
+              <div class="narrative-step-dot facts">F</div>
+              <div class="narrative-step-line"></div>
+            </div>
+            <div class="narrative-step-body">
+              <div class="narrative-step-label">Parties &amp; Facts</div>
+              <div class="narrative-step-text">
+                {% if result.appellant and result.appellant != "N/A" %}
+                  <strong style="color:var(--white);">{{ result.appellant }}</strong> vs <strong style="color:var(--white);">{{ result.respondent|default:"Respondent" }}</strong>
+                  {% if result.judgment_date and result.judgment_date != "N/A" %} &middot; {{ result.judgment_date }}{% endif %}
+                  {% if result.case_number and result.case_number != "N/A" %}<br><span style="font-size:11px;color:var(--silver);font-family:'Inconsolata',monospace;">{{ result.case_number }}</span>{% endif %}
+                {% else %}
+                  Case submitted via text input.
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="narrative-step">
+            <div class="narrative-step-left">
+              <div class="narrative-step-dot reasoning">R</div>
+              <div class="narrative-step-line"></div>
+            </div>
+            <div class="narrative-step-body">
+              <div class="narrative-step-label">Legal Context</div>
+              <div class="narrative-step-text">
+                <span class="badge-cat">{{ result.category|default:"Unknown" }}</span>
+                {% if sections_list %}
+                <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px;">
+                  {% for sec in sections_list %}<span class="section-pill">{{ sec }}</span>{% endfor %}
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="narrative-step">
+            <div class="narrative-step-left">
+              <div class="narrative-step-dot outcome {% if result.ml_label == 0 or result.label == 0 %}bad{% endif %}">O</div>
+            </div>
+            <div class="narrative-step-body">
+              <div class="narrative-step-label">Outcome &amp; Prediction</div>
+              <div class="narrative-step-text">
+                <span style="color:{% if result.ml_label == 1 or result.label == 1 %}#86efac{% elif result.ml_label == 0 or result.label == 0 %}#fca5a5{% else %}var(--neon){% endif %};font-weight:700;">
+                  {{ result.outcome|default:"Unknown" }}
+                </span>
+                &nbsp;&middot;&nbsp;
+                <span style="color:var(--silver);">ML: {{ result.outcome_display }}</span>
+                {% if result.confidence and result.confidence != "N/A" %}
+                &nbsp;&middot;&nbsp;<span style="color:var(--neon);font-weight:700;">{{ result.confidence }}</span> confidence
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
 
     <!-- EXTRACTED INFO -->
     <div class="block" id="block-info">
@@ -81,14 +236,20 @@
       <div class="block-body">
         <div class="info-grid">
           <div class="info-item"><div class="info-label">Case ID</div><div class="info-value">{{ result.case_id|default:"N/A" }}</div></div>
-          <div class="info-item"><div class="info-label">Date</div><div class="info-value">{{ result.judgment_date|default:"N/A" }}</div></div>
-          <div class="info-item"><div class="info-label">Words</div><div class="info-value">{{ result.word_count|default:"0" }}</div></div>
-          <div class="info-item"><div class="info-label">Category</div><div class="info-value"><span class="badge-cat">{{ result.category|default:"Unknown" }}</span></div></div>
+          <div class="info-item"><div class="info-label">Case Number</div><div class="info-value" style="font-size:11px;">{{ result.case_number|default:"N/A" }}</div></div>
           <div class="info-item s2"><div class="info-label">Appellant</div><div class="info-value">{{ result.appellant|default:"N/A" }}</div></div>
           <div class="info-item s2"><div class="info-label">Respondent</div><div class="info-value">{{ result.respondent|default:"N/A" }}</div></div>
-          <div class="info-item s2"><div class="info-label">Case Number</div><div class="info-value">{{ result.case_number|default:"N/A" }}</div></div>
-          <div class="info-item s2"><div class="info-label">Outcome</div><div class="info-value">{{ result.outcome|default:"N/A" }}</div></div>
+          <div class="info-item"><div class="info-label">Outcome</div><div class="info-value">{{ result.outcome|default:"N/A" }}</div></div>
+          <div class="info-item"><div class="info-label">Category</div><div class="info-value"><span class="badge-cat">{{ result.category|default:"Unknown" }}</span></div></div>
         </div>
+        {% if result.sections %}
+        <div style="margin-top:10px;">
+          <div class="info-label" style="margin-bottom:6px;">Legal Sections Cited</div>
+          <div class="sections-wrap">
+            {% for sec in sections_list %}<span class="section-pill">{{ sec }}</span>{% endfor %}
+          </div>
+        </div>
+        {% endif %}
       </div>
     </div>
 
@@ -103,16 +264,24 @@
       </div>
       <div class="block-body">
         <div class="ml-row">
-          <div class="ml-stat"><div class="ml-stat-label">Case Type</div><div class="ml-stat-value">{{ result.category|default:"Unknown" }}</div></div>
           <div class="ml-stat">
             <div class="ml-stat-label">Outcome</div>
             <div class="ml-stat-value">
-              {% if result.ml_label == 1 or result.label == 1 %}<span style="color:#86efac;">✅ Favorable</span>
-              {% elif result.ml_label == 0 or result.label == 0 %}<span style="color:#fca5a5;">❌ Unfavorable</span>
-              {% else %}<span style="color:var(--silver);">— N/A</span>{% endif %}
+              {% if result.ml_label == 1 or result.label == 1 %}<span style="color:#86efac;">Favorable</span>
+              {% elif result.ml_label == 0 or result.label == 0 %}<span style="color:#fca5a5;">Unfavorable</span>
+              {% else %}<span style="color:var(--silver);">N/A</span>{% endif %}
             </div>
           </div>
-          <div class="ml-stat"><div class="ml-stat-label">Prediction</div><div class="ml-stat-value neon">{{ result.outcome_display }}</div></div>
+          <div class="ml-stat">
+            <div class="ml-stat-label">Prediction</div>
+            <div class="ml-stat-value neon" style="font-size:11px;">{{ result.outcome_display }}</div>
+          </div>
+          <div class="ml-stat">
+            <div class="ml-stat-label">Source</div>
+            <div class="ml-stat-value" style="font-size:11px;color:var(--silver);">
+              {% if result.label_source == "ml_model" %}ML Model{% else %}Rule-based{% endif %}
+            </div>
+          </div>
         </div>
         <div class="conf-row">
           <span class="conf-label">Model Confidence</span>
@@ -148,6 +317,9 @@
               <span class="similar-score">{{ case.score }}%</span>
             </div>
             <p class="similar-text">{{ case.text }}</p>
+            <div class="sim-score-bar">
+              <div class="sim-score-fill" data-score="{{ case.score }}" style="width:0%"></div>
+            </div>
           </div>
           {% endfor %}
         {% else %}
@@ -159,8 +331,8 @@
       </div>
     </div>
 
-    <!-- SYSTEM INFO -->
-    <div class="block" id="block-sys">
+    <!-- SYSTEM INFO (collapsed by default) -->
+    <div class="block collapsed" id="block-sys">
       <div class="block-head" onclick="toggleBlock('block-sys')">
         <i class="bi bi-info-circle icon"></i>
         <span class="block-head-title">System Info</span>
@@ -169,11 +341,11 @@
       <div class="block-body">
         <p class="sys-text">Hybrid pipeline: rule-based extractor → sanity check → Cohere AI correction. Data stored to <code>data/processed.csv</code>.</p>
         <div class="tech-tags">
-          <span class="tech-tag">v1.0</span>
           <span class="tech-tag">Django 6</span>
           <span class="tech-tag">InLegalBERT</span>
           <span class="tech-tag">scikit-learn</span>
           <span class="tech-tag">Cohere</span>
+          <span class="tech-tag">OCI GenAI</span>
         </div>
       </div>
     </div>
@@ -182,20 +354,27 @@
 
   <!-- RIGHT: CHATBOT -->
   <div class="right-col">
-    <div class="chat-header">
+    <div class="chat-header-enhanced">
       <div>
-        <h3><i class="bi bi-scales" style="color:var(--neon);margin-right:5px;"></i>Lincoln Lawyer</h3>
-        <p>AI Legal Assistant · Ask about this case</p>
+        <h3><i class="bi bi-scales" style="color:var(--neon);"></i>Lincoln Lawyer</h3>
+        <p>AI Legal Assistant · Case Mode</p>
       </div>
-      <span class="chat-online">Online</span>
+      <span class="chat-online-pulse">Online</span>
     </div>
-    <div class="chat-quick">
-      <button class="qbtn" onclick="Chatbot.quickAction('explain')"><i class="bi bi-lightbulb"></i> Explain</button>
-      <button class="qbtn" onclick="Chatbot.quickAction('nextsteps')"><i class="bi bi-arrow-right-circle"></i> Next Steps</button>
-      <button class="qbtn" onclick="Chatbot.quickAction('risk')"><i class="bi bi-exclamation-triangle"></i> Risk</button>
-      <button class="qbtn" onclick="Chatbot.quickAction('arguments')"><i class="bi bi-chat-square-quote"></i> Arguments</button>
-      <button class="qbtn" onclick="Chatbot.quickAction('compare')"><i class="bi bi-diagram-2"></i> Compare</button>
-      <button class="qbtn" onclick="Chatbot.quickAction('eli5')"><i class="bi bi-emoji-smile"></i> ELI5</button>
+    {% if result.appellant and result.appellant != "N/A" %}
+    <div class="chat-context-banner">
+      <i class="bi bi-file-earmark-text"></i>
+      Context: <strong>{{ result.appellant|truncatechars:28 }}</strong>
+      {% if result.outcome and result.outcome != "Unknown" %}&middot; {{ result.outcome }}{% endif %}
+    </div>
+    {% endif %}
+    <div class="chat-quick-enhanced">
+      <button class="qbtn-enhanced" onclick="Chatbot.quickAction('explain')"><i class="bi bi-lightbulb"></i>Explain</button>
+      <button class="qbtn-enhanced" onclick="Chatbot.quickAction('nextsteps')"><i class="bi bi-arrow-right-circle"></i>Next Steps</button>
+      <button class="qbtn-enhanced" onclick="Chatbot.quickAction('risk')"><i class="bi bi-exclamation-triangle"></i>Risk</button>
+      <button class="qbtn-enhanced" onclick="Chatbot.quickAction('arguments')"><i class="bi bi-chat-square-quote"></i>Arguments</button>
+      <button class="qbtn-enhanced" onclick="Chatbot.quickAction('compare')"><i class="bi bi-diagram-2"></i>Compare</button>
+      <button class="qbtn-enhanced" onclick="Chatbot.quickAction('eli5')"><i class="bi bi-emoji-smile"></i>ELI5</button>
     </div>
     <div id="chat-messages" class="chat-messages"></div>
     <div class="chat-input-row">
@@ -214,11 +393,8 @@
       <button class="modal-close" onclick="closeModal('modal-summary')"><i class="bi bi-x-lg"></i></button>
     </div>
     <div class="modal-body">
-      {% if result.ai_summary %}
-        <p class="modal-text">{{ result.ai_summary }}</p>
-      {% else %}
-        <p class="modal-text" style="font-family:'Inconsolata',monospace;font-size:12px;">{{ result.input_text|default:"No text extracted." }}</p>
-      {% endif %}
+      {% if result.ai_summary %}<p class="modal-text">{{ result.ai_summary }}</p>
+      {% else %}<p class="modal-text" style="font-family:'Inconsolata',monospace;font-size:12px;">{{ result.input_text|default:"No text extracted." }}</p>{% endif %}
     </div>
   </div>
 </div>
@@ -241,7 +417,12 @@
         <div class="modal-item"><div class="modal-label">Category</div><div class="modal-value"><span class="badge-cat">{{ result.category|default:"Unknown" }}</span></div></div>
         <div class="modal-item"><div class="modal-label">Outcome</div><div class="modal-value">{{ result.outcome|default:"N/A" }}</div></div>
         {% if result.sections %}
-        <div class="modal-item full"><div class="modal-label">Legal Sections Cited</div><div class="modal-value" style="font-size:12px;color:var(--silver);">{{ result.sections }}</div></div>
+        <div class="modal-item full">
+          <div class="modal-label">Legal Sections Cited</div>
+          <div class="modal-value" style="margin-top:6px;">
+            <div class="sections-wrap">{% for sec in sections_list %}<span class="section-pill">{{ sec }}</span>{% endfor %}</div>
+          </div>
+        </div>
         {% endif %}
       </div>
     </div>
@@ -258,12 +439,15 @@
     <div class="modal-body">
       {% if result.similar_cases %}
         {% for case in result.similar_cases %}
-        <div style="background:var(--black);border:1px solid var(--charcoal);border-radius:4px;padding:12px;margin-bottom:8px;">
+        <div style="background:var(--black);border:1px solid var(--charcoal);border-radius:6px;padding:12px;margin-bottom:8px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
             <span class="similar-num">Case {{ forloop.counter }}</span>
             <span class="similar-score">{{ case.score }}% match</span>
           </div>
-          <p style="font-size:13px;color:var(--silver);line-height:1.6;">{{ case.text }}</p>
+          <p style="font-size:12px;color:var(--silver);line-height:1.6;">{{ case.text }}</p>
+          <div class="sim-score-bar" style="margin-top:8px;">
+            <div class="sim-score-fill" data-score="{{ case.score }}" style="width:0%"></div>
+          </div>
         </div>
         {% endfor %}
       {% else %}
@@ -277,12 +461,47 @@
   window.CSRF_TOKEN   = '{{ csrf_token }}';
   window.CHATBOT_URL  = '{% url "chatbot" %}';
   window.CHATBOT_MODE = 'case';
-  window.CONF_PCT     = '{{ result.confidence }}';
+  window.CONF_PCT     = '{{ result.ml_confidence_pct|default:0 }}';
 </script>
 <script src="{% static 'js/chatbot.js' %}"></script>
 <script src="{% static 'js/result.js' %}"></script>
 <script>
-  Chatbot.init('👋 I\'m Lincoln Lawyer, your AI Legal Assistant. Ask me anything about this case — judgment explanation, next steps, risk analysis, or legal arguments.');
-</script>
-</body>
+  document.addEventListener('DOMContentLoaded', function () {
+    // Animate similarity score bars
+    setTimeout(function () {
+      document.querySelectorAll('.sim-score-fill').forEach(function (el) {
+        el.style.width = (el.dataset.score || 0) + '%';
+      });
+    }, 700);
+
+    // Animate confidence ring
+    var pct = parseInt(window.CONF_PCT) || 0;
+    var ring = document.getElementById('ring-fill');
+    if (ring && pct > 0) {
+      var circumference = 163;
+      var offset = circumference - (pct / 100) * circumference;
+      setTimeout(function () { ring.style.strokeDashoffset = offset; }, 400);
+    }
+  });
+
+  // Copy summary to clipboard
+  function copySummary() {
+    var el = document.getElementById('summary-text');
+    if (!el) return;
+    var text = el.innerText || el.textContent;
+    navigator.clipboard.writeText(text.trim()).then(function () {
+      var btn = document.getElementById('copy-summary-btn');
+      if (btn) {
+        btn.classList.add('copied');
+        btn.innerHTML = '<i class="bi bi-check2"></i> Copied';
+        setTimeout(function () {
+          btn.classList.remove('copied');
+          btn.innerHTML = '<i class="bi bi-clipboard"></i> Copy';
+        }, 2000);
+      }
+    }).catch(function () {});
+  }
+
+  Chatbot.init("👋 I'm Lincoln Lawyer. I've read this case — ask me anything about it.\n\nTry: \"Explain the outcome\", \"What are the next steps?\", or \"What's the risk level?\"");
+</script></body>
 </html>

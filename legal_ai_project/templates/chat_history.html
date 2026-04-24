@@ -1,6 +1,90 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}Chat History — NUC Legal AI{% endblock %}
+{% block title %}Chat History — Nyaya Sahayak{% endblock %}
+
+{% block extra_css %}
+<style>
+.history-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 10px;
+  margin-top: 1.5rem;
+}
+.history-card {
+  background: var(--near-black);
+  border: 1px solid var(--charcoal);
+  border-radius: 8px;
+  padding: 14px 16px;
+  text-decoration: none;
+  color: var(--white);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color .15s, background .15s, transform .15s;
+  animation: fadeUp .35s ease both;
+}
+.history-card:hover { border-color: var(--neon); background: rgba(250,255,105,0.02); transform: translateY(-1px); color: var(--white); }
+.history-card-top { display: flex; align-items: center; gap: 8px; }
+.history-card-mode {
+  width: 30px; height: 30px;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.mode-case    { background: rgba(250,255,105,0.1); color: var(--neon); border: 1px solid rgba(250,255,105,0.2); }
+.mode-lincoln { background: rgba(255,255,255,0.05); color: var(--silver); border: 1px solid var(--charcoal); }
+.history-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.history-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.history-card-meta-item {
+  font-size: 10px;
+  color: var(--silver);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.history-card-file {
+  font-size: 10px;
+  color: var(--silver);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: var(--black);
+  border: 1px solid var(--charcoal);
+  border-radius: 4px;
+  width: fit-content;
+}
+.history-card-file i { color: var(--neon); }
+.history-card-arrow { font-size: 10px; color: var(--silver); align-self: flex-end; transition: color .15s; }
+.history-card:hover .history-card-arrow { color: var(--neon); }
+
+/* Stagger animation */
+.history-card:nth-child(1)  { animation-delay: .04s; }
+.history-card:nth-child(2)  { animation-delay: .08s; }
+.history-card:nth-child(3)  { animation-delay: .12s; }
+.history-card:nth-child(4)  { animation-delay: .16s; }
+.history-card:nth-child(5)  { animation-delay: .20s; }
+.history-card:nth-child(6)  { animation-delay: .24s; }
+.history-card:nth-child(7)  { animation-delay: .28s; }
+.history-card:nth-child(8)  { animation-delay: .32s; }
+.history-card:nth-child(9)  { animation-delay: .36s; }
+.history-card:nth-child(10) { animation-delay: .40s; }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="page-shell">
@@ -10,23 +94,31 @@
   <div class="page-sub">All your past case analyses and Lincoln Lawyer conversations.</div>
 
   {% if sessions %}
-  <div style="margin-top:1.5rem;display:flex;flex-direction:column;gap:.6rem;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+    <span style="font-size:11px;color:var(--silver);">{{ sessions|length }} session{{ sessions|length|pluralize }}</span>
+    <a href="{% url 'upload' %}" class="btn btn-ghost" style="font-size:11px;"><i class="bi bi-plus"></i> New Analysis</a>
+  </div>
+  <div class="history-grid">
     {% for s in sessions %}
-    <a href="{% url 'chat_session' s.pk %}" class="history-row">
-      <div class="history-left">
-        <span class="history-badge {% if s.mode == 'case' %}badge-case{% else %}badge-lincoln{% endif %}">
-          {% if s.mode == "case" %}Case{% else %}Lincoln{% endif %}
-        </span>
-        <div class="history-title">{{ s.title|default:"Untitled Session" }}</div>
+    <a href="{% url 'chat_session' s.pk %}" class="history-card">
+      <div class="history-card-top">
+        <div class="history-card-mode {% if s.mode == 'case' %}mode-case{% else %}mode-lincoln{% endif %}">
+          {% if s.mode == 'case' %}<i class="bi bi-file-earmark-text"></i>
+          {% else %}<i class="bi bi-scales"></i>{% endif %}
+        </div>
+        <div class="history-card-title">{{ s.title|default:"Untitled Session" }}</div>
       </div>
-      <div class="history-right">
-        <span class="history-meta">{{ s.updated_at|date:"d M Y, H:i" }}</span>
-        <span class="history-meta">{{ s.messages.count }} msg{{ s.messages.count|pluralize }}</span>
-        {% if s.uploaded_case %}
-        <span class="history-meta"><i class="bi bi-paperclip"></i> {{ s.uploaded_case.filename|truncatechars:20 }}</span>
-        {% endif %}
-        <i class="bi bi-chevron-right" style="color:var(--silver);font-size:.8rem;"></i>
+      <div class="history-card-meta">
+        <span class="history-card-meta-item"><i class="bi bi-calendar3"></i> {{ s.updated_at|date:"d M Y" }}</span>
+        <span class="history-card-meta-item"><i class="bi bi-clock"></i> {{ s.updated_at|date:"H:i" }}</span>
+        <span class="history-card-meta-item"><i class="bi bi-chat-dots"></i> {{ s.messages.count }} msg{{ s.messages.count|pluralize }}</span>
       </div>
+      {% if s.uploaded_case %}
+      <div class="history-card-file">
+        <i class="bi bi-paperclip"></i>{{ s.uploaded_case.filename|truncatechars:28 }}
+      </div>
+      {% endif %}
+      <div class="history-card-arrow"><i class="bi bi-arrow-right"></i> Open session</div>
     </a>
     {% endfor %}
   </div>

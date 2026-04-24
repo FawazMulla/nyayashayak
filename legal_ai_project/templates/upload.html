@@ -6,73 +6,102 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/upload.css' %}"/>
 <style>
-  /* Analyze page — centered single-column, no hero needed (landing covers that) */
-  .analyze-wrap {
-    max-width: 680px;
-    margin: 0 auto;
-    padding: 40px 24px 80px;
-  }
-  .analyze-header { margin-bottom: 28px; }
-  .analyze-title { font-size: 1.4rem; font-weight: 900; color: var(--white); margin-bottom: 6px; }
-  .analyze-sub { font-size: 13px; color: var(--silver); }
+.analyze-wrap { max-width:680px;margin:0 auto;padding:40px 24px 80px;position:relative;z-index:1; }
+.analyze-header { margin-bottom:28px; }
+.analyze-title { font-size:1.4rem;font-weight:900;color:var(--white);margin-bottom:6px; }
+.analyze-sub { font-size:13px;color:var(--silver); }
+.pipeline-steps { display:flex;align-items:center;gap:0;margin-bottom:28px;overflow-x:auto;padding-bottom:4px; }
+.pipeline-step { display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--silver);white-space:nowrap; }
+.pipeline-step i { color:var(--neon);font-size:12px; }
+.pipeline-arrow { color:var(--deep);margin:0 8px;font-size:10px; }
+.analyze-panel { background:var(--near-black);border:1px solid var(--charcoal);border-radius:8px;overflow:hidden; }
+.analyze-panel-head { padding:12px 20px;border-bottom:1px solid var(--charcoal);display:flex;align-items:center;gap:8px;background:rgba(20,20,20,0.9); }
+.analyze-panel-head i { color:var(--neon);font-size:12px; }
+.analyze-panel-head-title { font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--white); }
+.analyze-panel-body { padding:20px; }
 
-  /* Pipeline steps */
-  .pipeline-steps {
-    display: flex;
-    align-items: center;
-    gap: 0;
-    margin-bottom: 28px;
-    overflow-x: auto;
-    padding-bottom: 4px;
-  }
-  .pipeline-step {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--silver);
-    white-space: nowrap;
-  }
-  .pipeline-step i { color: var(--neon); font-size: 12px; }
-  .pipeline-arrow { color: var(--deep); margin: 0 8px; font-size: 10px; }
-
-  /* Form panel */
-  .analyze-panel {
-    background: var(--near-black);
-    border: 1px solid var(--charcoal);
-    border-radius: 8px;
-    overflow: hidden;
-  }
-  .analyze-panel-head {
-    padding: 12px 20px;
-    border-bottom: 1px solid var(--charcoal);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: rgba(20,20,20,0.9);
-  }
-  .analyze-panel-head i { color: var(--neon); font-size: 12px; }
-  .analyze-panel-head-title { font-size: 11px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: var(--white); }
-  .analyze-panel-body { padding: 20px; }
+/* Pipeline overlay */
+.pipeline-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,0.94);z-index:9999;align-items:center;justify-content:center;flex-direction:column; }
+.pipeline-overlay.active { display:flex; }
+.pipeline-modal { background:var(--near-black);border:1px solid var(--charcoal);border-radius:12px;padding:32px 36px;width:100%;max-width:420px;display:flex;flex-direction:column;gap:24px; }
+.pipeline-modal-title { font-size:13px;font-weight:900;color:var(--white);display:flex;align-items:center;gap:8px; }
+.pipeline-modal-title .dot { width:7px;height:7px;background:var(--neon);border-radius:50%;animation:pulse 1.2s ease-in-out infinite; }
+.pipeline-stages { display:flex;flex-direction:column;gap:8px; }
+.pipeline-stage { display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:6px;border:1px solid var(--charcoal);background:var(--black);transition:border-color .3s,background .3s; }
+.pipeline-stage.active { border-color:rgba(250,255,105,0.4);background:rgba(250,255,105,0.04); }
+.pipeline-stage.done { border-color:rgba(22,101,52,0.5);background:rgba(22,101,52,0.06); }
+.stage-icon { width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;background:var(--deep);color:var(--silver);transition:background .3s,color .3s; }
+.pipeline-stage.active .stage-icon { background:rgba(250,255,105,0.15);color:var(--neon); }
+.pipeline-stage.done  .stage-icon { background:rgba(22,101,52,0.2);color:#86efac; }
+.stage-body { flex:1;min-width:0; }
+.stage-name { font-size:12px;font-weight:600;color:var(--silver);transition:color .3s; }
+.pipeline-stage.active .stage-name { color:var(--white); }
+.pipeline-stage.done  .stage-name { color:#86efac; }
+.stage-desc { font-size:10px;color:#585858;margin-top:1px;font-family:'Inconsolata',monospace; }
+.pipeline-stage.active .stage-desc { color:var(--silver); }
+.stage-status { font-size:10px;font-weight:700;flex-shrink:0; }
+.stage-status.waiting { color:#585858; }
+.stage-status.running { color:var(--neon); }
+.stage-status.complete { color:#86efac; }
+.stage-spinner { display:none;width:14px;height:14px;border:2px solid var(--deep);border-top-color:var(--neon);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0; }
+.pipeline-stage.active .stage-spinner { display:block; }
+.pipeline-stage.done  .stage-spinner { display:none; }
+.pipeline-progress-bar { height:2px;background:var(--deep);border-radius:9999px;overflow:hidden; }
+.pipeline-progress-fill { height:100%;background:var(--neon);border-radius:9999px;width:0%;transition:width .6s ease; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="spinner-overlay" id="spinner">
-  <div class="spinner"></div>
-  <p class="spinner-text">Running ML + AI pipeline…</p>
-  <p class="spinner-sub">Extractor → Sanity Check → Cohere</p>
+<div class="pipeline-overlay" id="pipeline-overlay">
+  <div class="pipeline-modal">
+    <div class="pipeline-modal-title"><span class="dot"></span> Running Analysis Pipeline</div>
+    <div class="pipeline-stages" id="pipeline-stages">
+      <div class="pipeline-stage" id="stage-extract">
+        <div class="stage-icon"><i class="bi bi-file-earmark-text"></i></div>
+        <div class="stage-body"><div class="stage-name">Text Extraction</div><div class="stage-desc">pdfminer.six → pdfplumber fallback</div></div>
+        <div class="stage-spinner"></div>
+        <div class="stage-status waiting" id="status-extract">—</div>
+      </div>
+      <div class="pipeline-stage" id="stage-validate">
+        <div class="stage-icon"><i class="bi bi-shield-check"></i></div>
+        <div class="stage-body"><div class="stage-name">Legal Validation</div><div class="stage-desc">Verifying court judgment signals</div></div>
+        <div class="stage-spinner"></div>
+        <div class="stage-status waiting" id="status-validate">—</div>
+      </div>
+      <div class="pipeline-stage" id="stage-fields">
+        <div class="stage-icon"><i class="bi bi-search"></i></div>
+        <div class="stage-body"><div class="stage-name">Field Extraction</div><div class="stage-desc">Sections, outcome, parties, date</div></div>
+        <div class="stage-spinner"></div>
+        <div class="stage-status waiting" id="status-fields">—</div>
+      </div>
+      <div class="pipeline-stage" id="stage-ai">
+        <div class="stage-icon"><i class="bi bi-stars"></i></div>
+        <div class="stage-body"><div class="stage-name">AI Correction + Summary</div><div class="stage-desc">Cohere command-a-03-2025</div></div>
+        <div class="stage-spinner"></div>
+        <div class="stage-status waiting" id="status-ai">—</div>
+      </div>
+      <div class="pipeline-stage" id="stage-ml">
+        <div class="stage-icon"><i class="bi bi-cpu"></i></div>
+        <div class="stage-body"><div class="stage-name">ML Prediction</div><div class="stage-desc">InLegalBERT + Logistic Regression</div></div>
+        <div class="stage-spinner"></div>
+        <div class="stage-status waiting" id="status-ml">—</div>
+      </div>
+      <div class="pipeline-stage" id="stage-similar">
+        <div class="stage-icon"><i class="bi bi-diagram-2"></i></div>
+        <div class="stage-body"><div class="stage-name">Similarity Search</div><div class="stage-desc">Mean-centered cosine · top 5</div></div>
+        <div class="stage-spinner"></div>
+        <div class="stage-status waiting" id="status-similar">—</div>
+      </div>
+    </div>
+    <div class="pipeline-progress-bar"><div class="pipeline-progress-fill" id="pipeline-progress"></div></div>
+  </div>
 </div>
 
 <div class="analyze-wrap">
-
   <div class="analyze-header">
     <div class="analyze-title">Analyze a Case</div>
     <div class="analyze-sub">Upload a Supreme Court PDF or paste judgment text to run the full ML pipeline.</div>
   </div>
-
-  <!-- Pipeline indicator -->
   <div class="pipeline-steps">
     <div class="pipeline-step"><i class="bi bi-upload"></i> Upload</div>
     <span class="pipeline-arrow">›</span>
@@ -86,32 +115,21 @@
     <span class="pipeline-arrow">›</span>
     <div class="pipeline-step"><i class="bi bi-bar-chart"></i> Results</div>
   </div>
-
   {% if error %}
   <div class="alert" style="margin-bottom:16px;"><i class="bi bi-exclamation-triangle-fill"></i>{{ error }}</div>
   {% endif %}
-
   <div class="analyze-panel">
     <div class="analyze-panel-head">
       <i class="bi bi-file-earmark-text"></i>
       <span class="analyze-panel-head-title">Case Input</span>
     </div>
     <div class="analyze-panel-body">
-
-      <!-- Tabs -->
       <div class="tabs" style="margin-bottom:16px;">
-        <button class="tab-btn active" onclick="switchTab('pdf', this)">
-          <i class="bi bi-file-earmark-pdf"></i> Upload PDF
-        </button>
-        <button class="tab-btn" onclick="switchTab('text', this)">
-          <i class="bi bi-textarea-t"></i> Paste Text
-        </button>
+        <button class="tab-btn active" onclick="switchTab('pdf', this)"><i class="bi bi-file-earmark-pdf"></i> Upload PDF</button>
+        <button class="tab-btn" onclick="switchTab('text', this)"><i class="bi bi-textarea-t"></i> Paste Text</button>
       </div>
-
       <form method="post" action="{% url 'analyze' %}" enctype="multipart/form-data" id="upload-form">
         {% csrf_token %}
-
-        <!-- PDF tab -->
         <div class="tab-pane active" id="tab-pdf">
           <div class="drop-zone" id="drop-zone" onclick="document.getElementById('pdf_file').click()">
             <i class="bi bi-file-earmark-pdf"></i>
@@ -121,22 +139,15 @@
           </div>
           <div id="file-name"></div>
         </div>
-
-        <!-- Text tab -->
         <div class="tab-pane" id="tab-text">
-          <textarea name="text_input" id="text_input" rows="9"
-            placeholder="Paste the full judgment text here (minimum 150 words for quality extraction)…"></textarea>
+          <textarea name="text_input" id="text_input" rows="9" placeholder="Paste the full judgment text here (minimum 150 words for quality extraction)…"></textarea>
         </div>
-
         <button type="submit" class="btn btn-primary" id="submit-btn" style="margin-top:20px;">
           <i class="bi bi-lightning-charge-fill"></i> Analyze Case
         </button>
       </form>
-
     </div>
   </div>
-
-  <!-- Feature pills -->
   <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:20px;">
     <span class="badge badge-role"><i class="bi bi-diagram-3"></i> Outcome Classification</span>
     <span class="badge badge-role"><i class="bi bi-tags"></i> Category Detection</span>
@@ -144,8 +155,76 @@
     <span class="badge badge-role"><i class="bi bi-stars"></i> AI Correction</span>
     <span class="badge badge-role"><i class="bi bi-bar-chart"></i> ML Confidence</span>
   </div>
-
 </div>
 
 <script src="{% static 'js/upload.js' %}"></script>
+<script>
+(function(){
+  'use strict';
+  var STAGES=[
+    {id:'extract', duration:1800},
+    {id:'validate',duration:900},
+    {id:'fields',  duration:1200},
+    {id:'ai',      duration:2800},
+    {id:'ml',      duration:1400},
+    {id:'similar', duration:1000}
+  ];
+  function setStage(idx){
+    STAGES.forEach(function(s,i){
+      var el=document.getElementById('stage-'+s.id);
+      var st=document.getElementById('status-'+s.id);
+      if(!el)return;
+      el.classList.remove('active','done');
+      if(i<idx){el.classList.add('done');st.textContent='✓';st.className='stage-status complete';}
+      else if(i===idx){el.classList.add('active');st.textContent='…';st.className='stage-status running';}
+      else{st.textContent='—';st.className='stage-status waiting';}
+    });
+    var bar=document.getElementById('pipeline-progress');
+    if(bar)bar.style.width=Math.round((idx/STAGES.length)*100)+'%';
+  }
+  function runAnimation(){
+    var idx=0;
+    setStage(0);
+    function next(){
+      if(idx>=STAGES.length){
+        STAGES.forEach(function(s){
+          var el=document.getElementById('stage-'+s.id);
+          var st=document.getElementById('status-'+s.id);
+          if(el){el.classList.remove('active');el.classList.add('done');}
+          if(st){st.textContent='✓';st.className='stage-status complete';}
+        });
+        var bar=document.getElementById('pipeline-progress');
+        if(bar)bar.style.width='100%';
+        // Show "finalizing" message while server finishes
+        var title=document.querySelector('.pipeline-modal-title');
+        if(title)title.innerHTML='<span class="dot"></span> Finalizing results…';
+        return;
+      }
+      setStage(idx);
+      var dur=STAGES[idx].duration;
+      idx++;
+      setTimeout(next,dur);
+    }
+    next();
+  }
+  var form=document.getElementById('upload-form');
+  if(form){
+    form.addEventListener('submit',function(e){
+      var fi=document.getElementById('pdf_file');
+      var ti=document.getElementById('text_input');
+      var at=document.querySelector('.tab-pane.active');
+      if(at&&at.id==='tab-pdf'&&(!fi||!fi.files[0])){e.preventDefault();alert('Please select a PDF file.');return;}
+      if(at&&at.id==='tab-text'&&ti&&ti.value.trim().split(/\s+/).filter(Boolean).length<20){e.preventDefault();alert('Please paste more text.');return;}
+      var ov=document.getElementById('pipeline-overlay');
+      if(ov)ov.classList.add('active');
+      runAnimation();
+    });
+  }
+  // Always clear overlay on page load/reload/back-navigation
+  window.addEventListener('pageshow',function(e){
+    var ov=document.getElementById('pipeline-overlay');
+    if(ov)ov.classList.remove('active');
+  });
+})();
+</script>
 {% endblock %}
