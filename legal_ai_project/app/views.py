@@ -118,9 +118,13 @@ def analyze_case(request):
     ml_label, ml_conf = None, None
     try:
         from .ml.classifier import predict
-        ml_label, ml_conf = predict(result.get("input_text", "") or raw_text[:512])
+        from .extractor import strip_verdict_signals
+        # Strip verdict signals at inference — model must predict from facts only
+        raw_input = result.get("input_text", "") or raw_text[:512]
+        clean_input = strip_verdict_signals(raw_input)
+        ml_label, ml_conf = predict(clean_input)
     except Exception:
-        pass  # graceful — ML artefacts may not be built yet
+        pass
 
     # ── ML: similarity search ─────────────────────────────────────────────────
     similar_cases = []
@@ -131,21 +135,23 @@ def analyze_case(request):
         pass
 
     # ── Confidence display ────────────────────────────────────────────────────
-    # Prefer ML model confidence; fall back to rule-based random if model not ready
+    extracted_outcome = result.get("outcome", "")
+    extracted_label   = result.get("label")
+
     if ml_conf is not None:
         conf_pct = round(ml_conf * 100, 1)
         confidence_display = f"{conf_pct}%"
         label_source = "ml_model"
     else:
         import random
-        lbl = result.get("label")
+        lbl = extracted_label
         conf_pct = random.randint(78, 95) if lbl == 1 else (
                    random.randint(72, 89) if lbl == 0 else 0)
         confidence_display = f"{conf_pct}%" if conf_pct else "N/A"
         label_source = "rule_based"
 
-    # Use ML label if available, else extractor label
-    final_label = ml_label if ml_label is not None else result.get("label")
+    # ML predicts independently — use ML label when available
+    final_label = ml_label if ml_label is not None else extracted_label
 
     result["ml_label"]          = ml_label
     result["ml_confidence_pct"] = conf_pct
@@ -192,9 +198,18 @@ def analyze_case(request):
     # Pre-split sections for template (avoids custom template filter)
     sections_list = [s.strip() for s in result.get("sections", "").split(",") if s.strip()] if result.get("sections") else []
 
+    # Load model metadata for display
+    model_meta = {}
+    try:
+        from .ml.classifier import load_meta
+        model_meta = load_meta()
+    except Exception:
+        pass
+
     return render(request, "result.html", {
         "result": result,
         "sections_list": sections_list,
+        "model_meta": model_meta,
         "chat_session_id": chat_session.pk if chat_session else None,
         "uploaded_case_id": uploaded_case_obj.pk if uploaded_case_obj else None,
     })
@@ -208,12 +223,26 @@ def chatbot_api(request):
     mode       = request.POST.get("mode", "case").strip()
     context    = request.session.get("case_context", {})
 
+    # Build conversation history from DB for multi-turn memory
+    history = []
+    if request.user.is_authenticated:
+        session_id = request.session.get("chat_session_id")
+        if session_id:
+            try:
+                chat_session = ChatSession.objects.get(pk=session_id, user=request.user)
+                recent_msgs  = chat_session.messages.order_by("-created_at")[:8]
+                for msg in reversed(list(recent_msgs)):
+                    role = "user" if msg.sender == "user" else "assistant"
+                    history.append({"role": role, "content": msg.message})
+            except ChatSession.DoesNotExist:
+                pass
+
     from .chatbot.chatbot import generate_chat_response
-    response_text = generate_chat_response(user_query, context, action, mode)
+    response_text = generate_chat_response(user_query, context, action, mode, history)
 
     # Persist to DB if user is authenticated
     if request.user.is_authenticated:
-        session_id = request.session.get("chat_session_id")
+        session_id   = request.session.get("chat_session_id")
         chat_session = None
 
         if session_id:
@@ -222,7 +251,6 @@ def chatbot_api(request):
             except ChatSession.DoesNotExist:
                 pass
 
-        # Create a Lincoln session on first message if none exists
         if chat_session is None and mode == "lincoln":
             chat_session = ChatSession.objects.create(
                 user=request.user,
@@ -236,7 +264,7 @@ def chatbot_api(request):
             if display_query:
                 ChatMessage.objects.create(session=chat_session, sender="user", message=display_query)
             ChatMessage.objects.create(session=chat_session, sender="ai", message=response_text)
-            chat_session.save()  # bumps updated_at
+            chat_session.save()
 
     return JsonResponse({"response": response_text})
 

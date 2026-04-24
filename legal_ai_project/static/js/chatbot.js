@@ -4,8 +4,67 @@
 (function () {
   'use strict';
 
-  const CSRF  = () => window.CSRF_TOKEN  || '';
-  const URL   = () => window.CHATBOT_URL || '/chatbot/';
+  const CSRF = () => window.CSRF_TOKEN  || '';
+  const URL  = () => window.CHATBOT_URL || '/chatbot/';
+
+  /* ── Markdown renderer (no external deps) ────────────────────────── */
+  function renderMarkdown(text) {
+    return text
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      // Bold **text**
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      // Italic *text*
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      // Inline code `code`
+      .replace(/`([^`]+)`/g, '<code style="font-family:\'Inconsolata\',monospace;color:#faff69;font-size:11px;">$1</code>')
+      // Bullet lines starting with - or •
+      .replace(/^[\-•]\s+(.+)$/gm, '<li>$1</li>')
+      // Wrap consecutive <li> in <ul>
+      .replace(/(<li>.*<\/li>(\n|$))+/g, function(m) { return '<ul style="margin:6px 0 6px 16px;padding:0;">' + m + '</ul>'; })
+      // Numbered list 1. 2. etc
+      .replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>')
+      // Line breaks
+      .replace(/\n\n/g, '</p><p style="margin:6px 0 0;">')
+      .replace(/\n/g, '<br>');
+  }
+
+  /* ── Typewriter effect ────────────────────────────────────────────── */
+  function typewriterAppend(bubble, text, speed) {
+    speed = speed || 12;
+    // Render markdown first, then type the HTML
+    const html = '<p style="margin:0;">' + renderMarkdown(text) + '</p>';
+    bubble.innerHTML = '';
+    let i = 0;
+    const chars = Array.from(html);
+    let inTag = false;
+    let buffer = '';
+
+    function tick() {
+      if (i >= chars.length) {
+        bubble.innerHTML = html; // ensure final state is clean
+        scrollBottom();
+        return;
+      }
+      // Skip through HTML tags instantly
+      if (chars[i] === '<') inTag = true;
+      if (inTag) {
+        buffer += chars[i];
+        if (chars[i] === '>') {
+          inTag = false;
+          bubble.innerHTML += buffer;
+          buffer = '';
+        }
+        i++;
+        tick(); // tags are instant
+        return;
+      }
+      bubble.innerHTML += chars[i];
+      i++;
+      scrollBottom();
+      setTimeout(tick, speed);
+    }
+    tick();
+  }
 
   /* ── DOM helpers ──────────────────────────────────────────────────── */
   function getContainer() {
@@ -17,17 +76,30 @@
     if (c) c.scrollTop = c.scrollHeight;
   }
 
-  function appendMsg(text, role) {
+  function appendMsg(text, role, animate) {
     const c = getContainer();
     if (!c) return;
     const wrap   = document.createElement('div');
     wrap.className = 'msg-row' + (role === 'user' ? ' user' : '');
     const bubble = document.createElement('div');
     bubble.className = 'msg-bubble ' + role;
-    bubble.textContent = text;
-    wrap.appendChild(bubble);
-    c.appendChild(wrap);
-    scrollBottom();
+
+    if (role === 'bot' && animate) {
+      wrap.appendChild(bubble);
+      c.appendChild(wrap);
+      scrollBottom();
+      typewriterAppend(bubble, text, 10);
+    } else if (role === 'bot') {
+      bubble.innerHTML = '<p style="margin:0;">' + renderMarkdown(text) + '</p>';
+      wrap.appendChild(bubble);
+      c.appendChild(wrap);
+      scrollBottom();
+    } else {
+      bubble.textContent = text;
+      wrap.appendChild(bubble);
+      c.appendChild(wrap);
+      scrollBottom();
+    }
   }
 
   function showTyping() {
@@ -65,8 +137,8 @@
             '&mode='   + encodeURIComponent(mode),
     })
       .then(r => r.json())
-      .then(d => { removeTyping(); appendMsg(d.response, 'bot'); })
-      .catch(() => { removeTyping(); appendMsg('Network error — please try again.', 'bot'); });
+      .then(d => { removeTyping(); appendMsg(d.response, 'bot', true); })
+      .catch(() => { removeTyping(); appendMsg('Network error — please try again.', 'bot', false); });
   }
 
   /* ── Public API ───────────────────────────────────────────────────── */
@@ -76,7 +148,7 @@
       if (!el) return;
       const q = el.value.trim();
       if (!q) return;
-      appendMsg(q, 'user');
+      appendMsg(q, 'user', false);
       el.value = '';
       if (el.tagName === 'TEXTAREA') el.style.height = 'auto';
       postToBot(q, '');
@@ -95,14 +167,13 @@
         bail:      'How does bail work in India?',
         appeal:    'How do I file an appeal?',
       };
-      appendMsg(labels[action] || action, 'user');
+      appendMsg(labels[action] || action, 'user', false);
       postToBot('', action);
     },
 
     init: function (welcomeMsg) {
-      if (welcomeMsg) appendMsg(welcomeMsg, 'bot');
+      if (welcomeMsg) appendMsg(welcomeMsg, 'bot', false);
 
-      /* Enter key on input */
       const input = document.getElementById('chatInput');
       if (input) {
         input.addEventListener('keydown', function (e) {
@@ -111,7 +182,6 @@
             window.Chatbot.send('chatInput');
           }
         });
-        /* Auto-resize textarea */
         if (input.tagName === 'TEXTAREA') {
           input.addEventListener('input', function () {
             this.style.height = 'auto';

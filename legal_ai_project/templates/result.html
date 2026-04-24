@@ -23,6 +23,12 @@
     <a class="nav-link" href="/history/"><i class="bi bi-clock-history"></i> History</a>
   </div>
   <div class="nav-right">
+    <button id="share-btn" onclick="shareResult()" class="btn btn-ghost" style="font-size:11px;" title="Copy shareable summary (Ctrl+Shift+S)">
+      <i class="bi bi-share"></i> Share
+    </button>
+    <button onclick="printResult()" class="btn btn-ghost" style="font-size:11px;" title="Export as PDF (Ctrl+Shift+P)">
+      <i class="bi bi-file-earmark-pdf"></i> PDF
+    </button>
     <a href="/upload/" class="btn btn-back"><i class="bi bi-plus"></i> New Analysis</a>
   </div>
 </nav>
@@ -288,15 +294,60 @@
           <span class="conf-val">{{ result.confidence }}</span>
         </div>
         <div class="conf-track"><div class="conf-fill" id="conf-bar"></div></div>
+        {% if model_meta %}
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+          {% if model_meta.cv_accuracy_mean %}
+          <span style="font-size:10px;background:rgba(250,255,105,0.06);border:1px solid var(--olive);color:var(--neon);padding:2px 8px;border-radius:4px;">
+            CV Accuracy: {% widthratio model_meta.cv_accuracy_mean 1 100 %}% ± {% widthratio model_meta.cv_accuracy_std 1 100 %}%
+          </span>
+          {% endif %}
+          {% if model_meta.train_samples %}
+          <span style="font-size:10px;background:var(--black);border:1px solid var(--charcoal);color:var(--silver);padding:2px 8px;border-radius:4px;">
+            Trained on {{ model_meta.train_samples }} cases
+          </span>
+          {% endif %}
+        </div>
+        {% endif %}
         <p class="ml-note">
-          {% if result.label_source == "ml_model" %}LogReg on InLegalBERT embeddings · Supreme Court training data.
+          {% if result.label_source == "ml_model" %}Ensemble: Calibrated SVM + LogReg on InLegalBERT embeddings.
           {% else %}ML not trained. Run <code>python manage.py build_ml</code> to enable.{% endif %}
         </p>
       </div>
     </div>
 
-    <!-- SIMILAR CASES -->
-    <div class="block" id="block-similar">
+    <!-- RISK METER -->
+    {% if result.ml_label is not None or result.label is not None %}
+    <div class="block" id="block-risk">
+      <div class="block-head" onclick="toggleBlock('block-risk')">
+        <i class="bi bi-shield-exclamation icon"></i>
+        <span class="block-head-title">Risk Assessment</span>
+        <span class="tag tag-muted">Rule-based · instant</span>
+        <i class="bi bi-chevron-down chevron"></i>
+      </div>
+      <div class="block-body">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--silver);">Overall Risk</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span id="risk-score-val" style="font-size:10px;color:var(--silver);"></span>
+            <span id="risk-level-text" style="font-size:13px;font-weight:900;"></span>
+          </div>
+        </div>
+        <div style="background:var(--deep);border-radius:9999px;height:6px;overflow:hidden;">
+          <div id="risk-meter-fill" style="height:100%;width:0%;border-radius:9999px;transition:width 1s ease,background .5s ease;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:4px;">
+          <span style="font-size:9px;color:#86efac;">Low</span>
+          <span style="font-size:9px;color:#fbbf24;">Medium</span>
+          <span style="font-size:9px;color:#fca5a5;">High</span>
+        </div>
+        <p style="font-size:10px;color:#585858;margin-top:8px;font-family:'Inconsolata',monospace;line-height:1.5;">
+          Computed from: ML confidence · outcome · legal complexity (section count). Not a substitute for legal advice.
+        </p>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- SIMILAR CASES -->    <div class="block" id="block-similar">
       <div class="block-head" onclick="toggleBlock('block-similar')">
         <i class="bi bi-diagram-2 icon"></i>
         <span class="block-head-title">Similar Cases</span>
@@ -314,7 +365,21 @@
           <div class="similar-item">
             <div class="similar-top">
               <span class="similar-num">Case {{ forloop.counter }}</span>
-              <span class="similar-score">{{ case.score }}%</span>
+              <div style="display:flex;align-items:center;gap:5px;">
+                {% if case.outcome %}
+                  {% if "allowed" in case.outcome|lower or "acquitted" in case.outcome|lower or "quashed" in case.outcome|lower %}
+                    <span style="font-size:9px;font-weight:700;color:#86efac;background:rgba(22,101,52,0.15);border:1px solid rgba(22,101,52,0.3);padding:1px 6px;border-radius:4px;">{{ case.outcome }}</span>
+                  {% elif "dismissed" in case.outcome|lower %}
+                    <span style="font-size:9px;font-weight:700;color:#fca5a5;background:rgba(185,28,28,0.12);border:1px solid rgba(185,28,28,0.3);padding:1px 6px;border-radius:4px;">{{ case.outcome }}</span>
+                  {% else %}
+                    <span style="font-size:9px;font-weight:700;color:var(--silver);background:var(--black);border:1px solid var(--charcoal);padding:1px 6px;border-radius:4px;">{{ case.outcome }}</span>
+                  {% endif %}
+                {% endif %}
+                {% if case.category %}
+                  <span style="font-size:9px;color:var(--silver);">{{ case.category }}</span>
+                {% endif %}
+                <span class="similar-score">{{ case.score }}%</span>
+              </div>
             </div>
             <p class="similar-text">{{ case.text }}</p>
             <div class="sim-score-bar">
@@ -440,11 +505,25 @@
       {% if result.similar_cases %}
         {% for case in result.similar_cases %}
         <div style="background:var(--black);border:1px solid var(--charcoal);border-radius:6px;padding:12px;margin-bottom:8px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:4px;">
             <span class="similar-num">Case {{ forloop.counter }}</span>
-            <span class="similar-score">{{ case.score }}% match</span>
+            <div style="display:flex;align-items:center;gap:5px;">
+              {% if case.outcome %}
+                {% if "allowed" in case.outcome|lower or "acquitted" in case.outcome|lower %}
+                  <span style="font-size:9px;font-weight:700;color:#86efac;background:rgba(22,101,52,0.15);border:1px solid rgba(22,101,52,0.3);padding:1px 6px;border-radius:4px;">{{ case.outcome }}</span>
+                {% elif "dismissed" in case.outcome|lower %}
+                  <span style="font-size:9px;font-weight:700;color:#fca5a5;background:rgba(185,28,28,0.12);border:1px solid rgba(185,28,28,0.3);padding:1px 6px;border-radius:4px;">{{ case.outcome }}</span>
+                {% else %}
+                  <span style="font-size:9px;color:var(--silver);background:var(--black);border:1px solid var(--charcoal);padding:1px 6px;border-radius:4px;">{{ case.outcome }}</span>
+                {% endif %}
+              {% endif %}
+              {% if case.category %}<span style="font-size:9px;color:var(--silver);">{{ case.category }}</span>{% endif %}
+              <span class="similar-score">{{ case.score }}% match</span>
+            </div>
           </div>
+          {% if case.case_id %}<div style="font-size:10px;color:var(--neon);font-family:'Inconsolata',monospace;margin-bottom:4px;">{{ case.case_id }}</div>{% endif %}
           <p style="font-size:12px;color:var(--silver);line-height:1.6;">{{ case.text }}</p>
+          {% if case.sections %}<div style="font-size:10px;color:#585858;margin-top:4px;font-family:'Inconsolata',monospace;">{{ case.sections }}</div>{% endif %}
           <div class="sim-score-bar" style="margin-top:8px;">
             <div class="sim-score-fill" data-score="{{ case.score }}" style="width:0%"></div>
           </div>
@@ -458,10 +537,16 @@
 </div>
 
 <script>
-  window.CSRF_TOKEN   = '{{ csrf_token }}';
-  window.CHATBOT_URL  = '{% url "chatbot" %}';
-  window.CHATBOT_MODE = 'case';
-  window.CONF_PCT     = '{{ result.ml_confidence_pct|default:0 }}';
+  window.CSRF_TOKEN        = '{{ csrf_token }}';
+  window.CHATBOT_URL       = '{% url "chatbot" %}';
+  window.CHATBOT_MODE      = 'case';
+  window.CONF_PCT          = '{{ result.ml_confidence_pct|default:0 }}';
+  window.RESULT_LABEL      = '{{ result.ml_label|default:result.label|default:-1 }}';
+  window.RESULT_APPELLANT  = '{{ result.appellant|default:""|escapejs }}';
+  window.RESULT_OUTCOME    = '{{ result.outcome|default:""|escapejs }}';
+  window.RESULT_CONFIDENCE = '{{ result.confidence|default:""|escapejs }}';
+  window.RESULT_CATEGORY   = '{{ result.category|default:""|escapejs }}';
+  window.RESULT_SECTIONS   = '{{ result.sections|default:""|escapejs }}';
 </script>
 <script src="{% static 'js/chatbot.js' %}"></script>
 <script src="{% static 'js/result.js' %}"></script>

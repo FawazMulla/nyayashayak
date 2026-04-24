@@ -129,12 +129,13 @@ def _data_dir() -> Path:
     return Path(settings.DATA_DIR)
 
 
-def save_dataset_embeddings(texts: list[str]):
+def save_dataset_embeddings(texts: list[str], meta_records: list[dict] | None = None):
     """
     Compute and save embeddings for the full dataset.
     Run once via management command or train script.
-    Saves: data/embeddings.npy  (float32, shape N×768)
-           data/embeddings_meta.npy  (object array of text strings)
+    Saves: data/embeddings.npy  (float32, shape N x 768)
+           data/embeddings_meta.npy  (object array of input_text strings)
+           data/similarity_meta.json (rich metadata per entry: case_id, outcome, category, sections)
     """
     embs = get_embeddings_batch(texts)
     if embs is None:
@@ -144,7 +145,17 @@ def save_dataset_embeddings(texts: list[str]):
     d.mkdir(parents=True, exist_ok=True)
     np.save(d / EMBED_FILE, embs.astype(np.float32))
     np.save(d / META_FILE,  np.array(texts, dtype=object))
-    logger.info(f"Saved {len(texts)} embeddings → {d / EMBED_FILE}")
+
+    # Save rich metadata if provided
+    if meta_records:
+        import json
+        sim_meta_path = d / "similarity_meta.json"
+        sim_meta_path.write_text(
+            json.dumps(meta_records, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        logger.info(f"Saved similarity metadata -> {sim_meta_path}")
+
+    logger.info(f"Saved {len(texts)} embeddings -> {d / EMBED_FILE}")
 
 
 def load_dataset_embeddings() -> tuple[np.ndarray | None, list[str] | None]:

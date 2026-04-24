@@ -302,3 +302,74 @@
 }
 .qbtn-enhanced i { font-size: 13px; color: var(--neon); }
 .qbtn-enhanced:hover { border-color: var(--neon); color: var(--white); background: rgba(250,255,105,0.04); }
+
+/* ── Mobile responsive — result page ─────────────────────────────── */
+@media (max-width: 860px) {
+  .dashboard {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  .left-col {
+    overflow: visible;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--charcoal);
+  }
+  .right-col {
+    height: 520px;
+  }
+  .insight-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .verdict-hero {
+    flex-wrap: wrap;
+  }
+  .conf-ring-wrap {
+    margin-left: auto;
+  }
+}
+
+@media (max-width: 540px) {
+  .insight-row {
+    grid-template-columns: 1fr;
+  }
+  .top-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .nav-links { display: none; }
+}
+
+/* ── Print / PDF export stylesheet ───────────────────────────────── */
+@media print {
+  body { background: #fff !important; color: #000 !important; }
+  .nav, .top-bar, .right-col, .chat-quick-enhanced,
+  .chat-header-enhanced, #chat-messages, .chat-input-row,
+  .modal-overlay, .btn, .copy-btn, #share-btn { display: none !important; }
+  .dashboard { display: block !important; height: auto !important; }
+  .left-col { overflow: visible !important; height: auto !important; border: none !important; }
+  .block { border: 1px solid #ccc !important; margin-bottom: 12px; page-break-inside: avoid; }
+  .block-head { background: #f5f5f5 !important; color: #000 !important; }
+  .block-head-title, .block-body, .info-value, .info-label,
+  .ml-stat-value, .similar-text, .narrative-step-text { color: #000 !important; }
+  .verdict-hero { border: 2px solid #333 !important; background: #f9f9f9 !important; }
+  .verdict-outcome, .verdict-conf-val { color: #000 !important; }
+  .section-pill { border: 1px solid #999 !important; color: #333 !important; background: #eee !important; }
+  .conf-track, .conf-fill, .sim-score-bar, .sim-score-fill { display: none !important; }
+  .narrative-step-dot { border: 2px solid #333 !important; color: #000 !important; background: #eee !important; }
+  .tag { border: 1px solid #999 !important; color: #333 !important; background: #eee !important; }
+  a { color: #000 !important; text-decoration: none !important; }
+
+  /* Print header */
+  body::before {
+    content: 'Nyaya Sahayak — AI Legal Analysis Report';
+    display: block;
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+    padding: 16px 0 8px;
+    border-bottom: 2px solid #333;
+    margin-bottom: 16px;
+  }
+}

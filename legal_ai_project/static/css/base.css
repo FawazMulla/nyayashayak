@@ -741,3 +741,10 @@ select.field-input option { background: #141414; color: #fff; }
 .page-shell,
 .auth-wrap,
 .chat-page  { position:relative;z-index:1; }
+
+/* ── Mobile nav ───────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .nav-links { display: none; }
+  .nav-logo { font-size: 13px; }
+  .page-shell { padding: 20px 16px 48px; }
+}

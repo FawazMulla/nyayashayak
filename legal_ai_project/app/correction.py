@@ -104,24 +104,43 @@ def _ai_enabled() -> bool:
 # ── Rule-based sanity check ───────────────────────────────────────────────────
 
 def detect_issues(data: dict, text: str) -> list[str]:
+    """
+    Rule-based check for known extraction errors.
+    Returns list of field names that need AI correction.
+    """
     issues   = []
     sections  = data.get("sections", "") or ""
     appellant = data.get("appellant", "") or ""
     category  = data.get("category", "") or ""
+    outcome   = data.get("outcome", "") or ""
 
+    # Sections issues
     if "509 IT Act" in sections:           issues.append("sections")
     if "509 TN" in sections:               issues.append("sections")
     if sections.count("509") > 1:          issues.append("sections")
     if re.search(r"\b(302|376|420|498)\s+(?!IPC|BNS)", sections):
         issues.append("sections")
+    # Sections look like raw numbers without act names
+    if sections and not re.search(r"(IPC|CrPC|BNS|NDPS|PMLA|CPC|NI Act|MV Act|IBC|POCSO|Constitution)", sections):
+        issues.append("sections")
 
+    # Appellant issues
     tokens = appellant.split()
     if tokens and len(tokens[0]) > 20:     issues.append("appellant")
+    if re.search(r"[0-9a-f]{8,}", appellant, re.IGNORECASE):  # UUID/hash in name
+        issues.append("appellant")
 
+    # Category issues
     tl = text.lower()
     if ("criminal" in tl and "writ" in tl
             and category.lower() == "constitutional / writ"):
         issues.append("category")
+    if category == "Other" and len(text) > 500:
+        issues.append("category")   # "Other" on a long doc usually means misclassified
+
+    # Outcome issues
+    if outcome == "Unknown" and len(text) > 500:
+        issues.append("outcome")
 
     return list(set(issues))
 
@@ -152,12 +171,12 @@ Field correction rules:
     return f"""You are a legal AI assistant for Indian Supreme Court judgments.
 
 Document: {doc_name}
-Legal text (first 2000 chars):
+Legal text (first 4000 chars):
 {context}
 {correction_block}
 Respond with valid JSON only (no markdown, no explanation):
 {{
-  "summary": "4-6 sentence plain-text summary: document type, parties, main legal issue, outcome",
+  "summary": "5-7 sentence plain-text summary covering: (1) case type and parties, (2) core legal dispute, (3) key sections/laws involved, (4) what the lower court decided, (5) what the Supreme Court decided and why, (6) practical significance",
   "corrections": {json.dumps({k: "..." for k in issues}) if issues else "{}"}
 }}"""
 
@@ -176,7 +195,8 @@ def run_ai_pipeline(data: dict, raw_text: str) -> tuple[str, dict]:
         return "", {}
 
     issues  = detect_issues(data, raw_text)
-    context = raw_text[:2000].strip()
+    # Send first 4000 chars for better context (covers most judgment headers + facts)
+    context = raw_text[:4000].strip()
     prompt  = _build_combined_prompt(issues, data, context)
 
     try:

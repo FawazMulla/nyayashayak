@@ -64,39 +64,45 @@ def _chatbot_enabled() -> bool:
 
 # ── OCI chat call ─────────────────────────────────────────────────────────────
 
-def _call(user_prompt: str, system_prompt: str = "") -> str:
-    """Make a single OCI Generative AI chat call. Never raises."""
+def _call(user_prompt: str, system_prompt: str = "", history: list | None = None) -> str:
+    """Make a single OCI Generative AI chat call with optional conversation history."""
     if not _chatbot_enabled():
-        return "⚠️ Chatbot is currently disabled (CHATBOT_ENABLED=false)."
+        return "Chatbot is currently disabled."
 
     client = _get_client()
     if client is None:
-        return "⚠️ Chatbot unavailable — OCI credentials not configured correctly."
+        return "Chatbot unavailable — OCI credentials not configured."
 
     try:
         import oci
-        model_id      = getattr(settings, "OCI_CHAT_MODEL_ID", "cohere.command-a-03-2025")
-        compartment   = settings.OCI_COMPARTMENT_ID
+        model_id    = getattr(settings, "OCI_CHAT_MODEL_ID", "cohere.command-a-03-2025")
+        compartment = settings.OCI_COMPARTMENT_ID
 
-        messages = []
-        if system_prompt:
-            messages.append(
-                oci.generative_ai_inference.models.CohereSystemMessage(
-                    role="SYSTEM", message=system_prompt
-                )
-            )
-        messages.append(
-            oci.generative_ai_inference.models.CohereUserMessage(
-                role="USER", message=user_prompt
-            )
-        )
+        # Build chat history for multi-turn memory
+        chat_history = []
+        if history:
+            for turn in history[-6:]:   # last 3 exchanges (6 messages)
+                role = turn.get("role", "user").upper()
+                msg  = turn.get("content", "")
+                if role == "USER":
+                    chat_history.append(
+                        oci.generative_ai_inference.models.CohereUserMessage(
+                            role="USER", message=msg
+                        )
+                    )
+                else:
+                    chat_history.append(
+                        oci.generative_ai_inference.models.CohereChatBotMessage(
+                            role="CHATBOT", message=msg
+                        )
+                    )
 
         details = oci.generative_ai_inference.models.CohereChatRequest(
             message=user_prompt,
-            chat_history=messages[:-1] if len(messages) > 1 else [],
+            chat_history=chat_history,
             preamble_override=system_prompt or None,
-            max_tokens=300,
-            temperature=0.2,
+            max_tokens=500,       # increased from 300 — avoids cut-off responses
+            temperature=0.3,      # slightly higher — less robotic
             is_stream=False,
         )
 
@@ -113,7 +119,7 @@ def _call(user_prompt: str, system_prompt: str = "") -> str:
 
     except Exception as e:
         logger.error(f"OCI chat call failed: {e}")
-        return f"⚠️ AI response failed: {e}"
+        return f"AI response failed: {e}"
 
 
 # ── Quick-action dispatch ─────────────────────────────────────────────────────
@@ -121,48 +127,53 @@ _CASE_SYSTEM = CASE_SYSTEM
 _LINCOLN_SYSTEM = LINCOLN_SYSTEM
 
 QUICK_ACTIONS = {
-    "explain":   lambda ctx: _call(prompts.explain_case(ctx),   _CASE_SYSTEM),
-    "nextsteps": lambda ctx: _call(prompts.next_steps(ctx),     _CASE_SYSTEM),
-    "risk":      lambda ctx: _call(prompts.risk_analysis(ctx),  _CASE_SYSTEM),
-    "arguments": lambda ctx: _call(prompts.generate_arguments(ctx), _CASE_SYSTEM),
-    "compare":   lambda ctx: _call(prompts.compare_cases(ctx),  _CASE_SYSTEM),
-    "eli5":      lambda ctx: _call(prompts.eli5(ctx),           _CASE_SYSTEM),
+    "explain":   lambda ctx, h: _call(prompts.explain_case(ctx),        _CASE_SYSTEM, h),
+    "nextsteps": lambda ctx, h: _call(prompts.next_steps(ctx),          _CASE_SYSTEM, h),
+    "risk":      lambda ctx, h: _call(prompts.risk_analysis(ctx),       _CASE_SYSTEM, h),
+    "arguments": lambda ctx, h: _call(prompts.generate_arguments(ctx),  _CASE_SYSTEM, h),
+    "compare":   lambda ctx, h: _call(prompts.compare_cases(ctx),       _CASE_SYSTEM, h),
+    "eli5":      lambda ctx, h: _call(prompts.eli5(ctx),                _CASE_SYSTEM, h),
 }
 
 LINCOLN_ACTIONS = {
-    "general":  lambda: _call(prompts.lincoln_procedures(),    _LINCOLN_SYSTEM),
-    "rights":   lambda: _call(prompts.lincoln_rights(),        _LINCOLN_SYSTEM),
-    "bail":     lambda: _call(prompts.lincoln_bail(),          _LINCOLN_SYSTEM),
-    "appeal":   lambda: _call(prompts.lincoln_appeal(),        _LINCOLN_SYSTEM),
-    "explain":  lambda: _call(prompts.lincoln_explain_prompt(), _LINCOLN_SYSTEM),
-    "eli5":     lambda: _call(prompts.lincoln_eli5_prompt(),   _LINCOLN_SYSTEM),
+    "general": lambda h: _call(prompts.lincoln_procedures(),     _LINCOLN_SYSTEM, h),
+    "rights":  lambda h: _call(prompts.lincoln_rights(),         _LINCOLN_SYSTEM, h),
+    "bail":    lambda h: _call(prompts.lincoln_bail(),           _LINCOLN_SYSTEM, h),
+    "appeal":  lambda h: _call(prompts.lincoln_appeal(),         _LINCOLN_SYSTEM, h),
+    "explain": lambda h: _call(prompts.lincoln_explain_prompt(), _LINCOLN_SYSTEM, h),
+    "eli5":    lambda h: _call(prompts.lincoln_eli5_prompt(),    _LINCOLN_SYSTEM, h),
 }
 
 
-def generate_chat_response(user_query: str, context: dict, action: str = "", mode: str = "case") -> str:
+def generate_chat_response(
+    user_query: str,
+    context: dict,
+    action: str = "",
+    mode: str = "case",
+    history: list | None = None,
+) -> str:
     """
     Main entry point.
-    mode="lincoln" → general legal assistant, no case restriction
-    mode="case"    → strict case-only assistant
+    history: list of {"role": "user"|"assistant", "content": "..."} dicts
+             for multi-turn conversation memory (last 3 exchanges used).
     """
-    query = (user_query or "").strip()
+    query   = (user_query or "").strip()
+    history = history or []
 
-    # ── Lincoln Lawyer — general legal Q&A ───────────────────────────────────
     if mode == "lincoln":
         if action and action in LINCOLN_ACTIONS:
-            return LINCOLN_ACTIONS[action]()
+            return LINCOLN_ACTIONS[action](history)
         if not query:
             return "Please type a legal question."
-        return _call(prompts.lincoln_query(query), _LINCOLN_SYSTEM)
+        return _call(prompts.lincoln_query(query), _LINCOLN_SYSTEM, history)
 
-    # ── Case mode — strict case-only ──────────────────────────────────────────
     if not context:
-        return "⚠️ No case context found. Please analyze a case first."
+        return "No case context found. Please analyze a case first."
 
     if action and action in QUICK_ACTIONS:
-        return QUICK_ACTIONS[action](context)
+        return QUICK_ACTIONS[action](context, history)
 
     if not query:
         return "Please type a question or click one of the quick-action buttons."
 
-    return _call(prompts.general_query(context, query), _CASE_SYSTEM)
+    return _call(prompts.general_query(context, query), _CASE_SYSTEM, history)

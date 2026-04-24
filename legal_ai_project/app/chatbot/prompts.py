@@ -6,22 +6,32 @@ from . import prompt_config as cfg
 
 
 def _case_block(ctx: dict) -> str:
+    """Build a rich case context block for injection into prompts."""
     sim = ctx.get("similar_cases", [])[:3]
     sim_text = ""
     if sim:
-        sim_text = "\nSimilar Cases: " + " | ".join(
-            f"[{c['score']}%] {c['text'][:80]}…" for c in sim
-        )
+        parts = []
+        for c in sim:
+            outcome_tag = f"[{c.get('outcome', '')}]" if c.get("outcome") else ""
+            cat_tag     = f"({c.get('category', '')})" if c.get("category") else ""
+            parts.append(f"[{c['score']}% match] {outcome_tag}{cat_tag} {c['text'][:100]}...")
+        sim_text = "\nSimilar Precedents:\n" + "\n".join(parts)
+
     label_map = {1: "Favorable (Allowed)", 0: "Unfavorable (Dismissed)"}
     pred = label_map.get(ctx.get("prediction"), "Undetermined")
     conf = ctx.get("confidence", "N/A")
     if isinstance(conf, float):
         conf = f"{round(conf * 100, 1)}%"
+
+    # Prefer AI summary over rule-based input_text
+    summary = ctx.get("summary") or ctx.get("input_text", "N/A")
+
     return (
-        f"Case: {ctx.get('summary') or ctx.get('input_text', 'N/A')}\n"
+        f"Case Summary: {summary}\n"
         f"Appellant: {ctx.get('appellant', 'N/A')} | Category: {ctx.get('category', 'N/A')}\n"
         f"Outcome: {ctx.get('outcome', 'N/A')} | Sections: {ctx.get('sections', 'N/A')}\n"
-        f"ML Prediction: {pred} ({conf}){sim_text}"
+        f"ML Prediction: {pred} (Confidence: {conf})"
+        f"{sim_text}"
     )
 
 

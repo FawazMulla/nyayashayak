@@ -124,3 +124,14 @@
   background: var(--near-black);
   border-top: 1px solid var(--charcoal);
 }
+
+/* ── Mobile responsive ────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .chat-page { border-left: none; border-right: none; }
+  .chat-page-header { padding: 14px 16px 12px; }
+  .chat-page-name { font-size: 14px; }
+  .chat-page-quick { padding: 8px 12px; gap: 5px; }
+  .chat-page-quick-label { display: none; }
+  .qbtn { font-size: 10px; padding: 4px 8px; }
+  .chat-page-input { padding: 10px 12px; }
+}

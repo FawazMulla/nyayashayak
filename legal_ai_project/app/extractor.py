@@ -621,14 +621,72 @@ def _extract_decision_sentences(clean_body: str) -> list[str]:
     return decision[-2:] if decision else []
 
 
+def strip_verdict_signals(text: str) -> str:
+    """
+    Remove outcome/verdict sentences from input_text before ML training/prediction.
+    Prevents data leakage — model learns from facts and reasoning, not the verdict.
+
+    Strips sentences containing explicit Supreme Court outcome signals.
+    Preserves sentences about lower court decisions (those are facts).
+    """
+    VERDICT_PATTERNS = [
+        # Direct outcome statements
+        r"\bappeal[s]?\s+(?:is\s+|are\s+)?(?:hereby\s+)?(?:allowed|dismissed|disposed)\b",
+        r"\bwe\s+(?:allow|dismiss|dispose)\b",
+        r"\baccordingly[,\s]+(?:we\s+)?(?:allow|dismiss|dispose)\b",
+        r"\bpetition[s]?\s+(?:is|are)\s+(?:hereby\s+)?(?:allowed|dismissed|disposed)\b",
+        r"\bstand[s]?\s+disposed\b",
+        r"\bdisposed\s+of\s+accordingly\b",
+        r"\bhereby\s+(?:allowed|dismissed|quashed|set\s+aside)\b",
+        r"\bappeal\s+(?:is\s+)?(?:allowed|dismissed)\b",
+        r"\blacks?\s+merit\b",
+        r"\bno\s+merit\b",
+        r"\bpending\s+application[s]?\s*,?\s*if\s+any\b",
+        # Conviction/acquittal outcomes
+        r"\bconviction\s+.{0,40}set\s+aside\b",
+        r"\bacquitted\b",
+        r"\bhereby\s+quashed\b",
+        r"\bquashed\s+and\s+set\s+aside\b",
+        r"\bsentence\s+.{0,20}(?:reduced|modified|commuted)\b",
+        r"\bremanded\s+(?:back|to)\b",
+        # Impugned order set aside (Supreme Court verdict, not lower court reference)
+        r"\bimpugned\s+(?:judgment|order|decision)\s+.{0,60}(?:set\s+aside|quashed|upheld|confirmed|restored)\b",
+        r"\bimpugned\s+(?:judgment|order)\s+(?:is\s+|are\s+)?(?:hereby\s+)?set\s+aside\b",
+        # "stands restored" — outcome signal
+        r"\bstand[s]?\s+restored\b",
+        # "we pass the following order" — precedes verdict
+        r"\bwe\s+pass\s+the\s+following\s+order\b",
+        r"\bwe\s+(?:hereby\s+)?direct\b.{0,80}\blist\b",
+        # Result/conclusion markers
+        r"\bin\s+(?:the\s+)?result\b.{0,30}\bappeal\b",
+        r"\bin\s+view\s+of\s+(?:the\s+)?above.{0,30}\bappeal\b",
+        r"\bfor\s+(?:the\s+)?(?:above\s+)?reasons?.{0,30}\bappeal\b",
+    ]
+
+    sentences = re.split(r"(?<=[.!?])\s+", text)
+    clean = []
+    for s in sentences:
+        has_signal = any(re.search(p, s, re.IGNORECASE | re.DOTALL) for p in VERDICT_PATTERNS)
+        if not has_signal:
+            clean.append(s)
+
+    result = " ".join(clean).strip()
+    # Safety: if we stripped too much, keep facts (all but last 2 sentences)
+    if len(result.split()) < 30 and len(sentences) > 2:
+        return " ".join(sentences[:-2]).strip()
+    return result
+
+
 def build_input_text(text: str, sections: str, outcome: str, category: str) -> str:
     """
-    Build clean, concise model-ready input_text (150-300 words):
+    Build clean, concise model-ready input_text (150-300 words).
+    Verdict signals are STRIPPED so the model learns from facts and reasoning,
+    not from the outcome sentence itself (prevents data leakage).
+
+    Structure:
       - 2 facts sentences (beginning)
       - 1-2 reasoning sentences (middle)
-      - 1-2 decision sentences with explicit outcome signal (end)
       - Sections appended
-    Single flat paragraph — no newlines, no noise.
     """
     m = re.search(r"\b(?:JUDGMENT|J\s*U\s*D\s*G\s*M\s*E\s*N\s*T|O\s*R\s*D\s*E\s*R)\b",
                   text, re.IGNORECASE)
@@ -639,9 +697,12 @@ def build_input_text(text: str, sections: str, outcome: str, category: str) -> s
 
     body = _clean_body(body)
 
-    # Flatten to single-line prose — eliminates all \n in output
+    # Flatten to single-line prose
     flat = re.sub(r"\n+", " ", body)
     flat = re.sub(r"\s{2,}", " ", flat).strip()
+
+    # Strip verdict signals BEFORE splitting — prevents leakage
+    flat = strip_verdict_signals(flat)
 
     # Split into clean sentences
     sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", flat)
@@ -655,10 +716,10 @@ def build_input_text(text: str, sections: str, outcome: str, category: str) -> s
 
     n = len(sentences)
 
-    # ── Facts: first 2 good sentences ────────────────────────────────────────
+    # Facts: first 2 good sentences
     facts = sentences[:2]
 
-    # ── Reasoning: 1-2 sentences from 40-70% of document ────────────────────
+    # Reasoning: 1-2 sentences from 40-70% of document
     mid_start = max(2, int(n * 0.40))
     mid_end   = max(mid_start + 2, int(n * 0.70))
     reasoning_pool = sentences[mid_start:mid_end]
@@ -672,15 +733,10 @@ def build_input_text(text: str, sections: str, outcome: str, category: str) -> s
     if not reasoning:
         reasoning = reasoning_pool[:1]
 
-    # ── Decision: from clean body, must have outcome signal ──────────────────
-    decision = _extract_decision_sentences(body)
-    if not decision:
-        decision = [s for s in sentences[-3:] if _good_sentence(s)][-2:]
-
-    # ── Compose, deduplicate, strip any residual newlines ────────────────────
+    # No decision sentences — model must predict from facts+reasoning only
     seen = set()
     parts = []
-    for s in facts + reasoning + decision:
+    for s in facts + reasoning:
         s = re.sub(r"\s+", " ", s).strip()
         if s not in seen:
             seen.add(s)
@@ -688,12 +744,12 @@ def build_input_text(text: str, sections: str, outcome: str, category: str) -> s
 
     result = " ".join(parts)
 
-    # ── Trim to 300 words ─────────────────────────────────────────────────────
+    # Trim to 300 words
     words = result.split()
     if len(words) > 300:
         result = " ".join(words[:300]).rsplit(".", 1)[0] + "."
 
-    # ── Append sections ───────────────────────────────────────────────────────
+    # Append sections (legal context, not outcome)
     if sections:
         result += f" Sections: {sections}."
 

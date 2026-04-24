@@ -195,18 +195,18 @@
   <div class="stats-strip fade-in">
     <div class="stat-tile">
       <div class="stat-tile-label">Cases Analyzed</div>
-      <div class="stat-tile-value neon">{{ total_cases }}</div>
+      <div class="stat-tile-value neon" data-count="{{ total_cases }}">{{ total_cases }}</div>
       <div class="stat-tile-sub">PDFs uploaded</div>
     </div>
     <div class="stat-tile">
       <div class="stat-tile-label">Chat Sessions</div>
-      <div class="stat-tile-value">{{ total_sessions }}</div>
+      <div class="stat-tile-value" data-count="{{ total_sessions }}">{{ total_sessions }}</div>
       <div class="stat-tile-sub">Conversations</div>
     </div>
     {% if total_dataset %}
     <div class="stat-tile">
       <div class="stat-tile-label">Dataset Size</div>
-      <div class="stat-tile-value">{{ total_dataset }}</div>
+      <div class="stat-tile-value" data-count="{{ total_dataset }}">{{ total_dataset }}</div>
       <div class="stat-tile-sub">Judgments indexed</div>
     </div>
     {% endif %}
@@ -434,6 +434,22 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+  // Animated number counters
+  document.querySelectorAll('.stat-tile-value[data-count]').forEach(function(el) {
+    var target = parseInt(el.dataset.count) || 0;
+    var duration = 900;
+    var start = null;
+    function step(ts) {
+      if (!start) start = ts;
+      var progress = Math.min((ts - start) / duration, 1);
+      var ease = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+      el.textContent = Math.round(ease * target);
+      if (progress < 1) requestAnimationFrame(step);
+      else el.textContent = target;
+    }
+    requestAnimationFrame(step);
+  });
+
   // Outcome bar
   var bar = document.getElementById('outcome-bar');
   if (bar) setTimeout(function(){ bar.style.width = (bar.dataset.pct || 0) + '%'; }, 400);

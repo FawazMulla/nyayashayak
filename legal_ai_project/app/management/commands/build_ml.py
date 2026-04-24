@@ -36,19 +36,26 @@ class Command(BaseCommand):
             self.stderr.write("processed.csv not found — run the extractor first")
             return
 
-        texts = []
+        texts        = []
+        meta_records = []
         with open(csv_path, encoding="utf-8") as f:
             for row in csv.DictReader(f):
                 t = row.get("input_text", "").strip()
                 if t:
                     texts.append(t)
+                    meta_records.append({
+                        "case_id":  row.get("case_id", ""),
+                        "outcome":  row.get("outcome", ""),
+                        "category": row.get("category", ""),
+                        "sections": row.get("sections", ""),
+                    })
 
         if not texts:
             self.stderr.write("No input_text rows found in processed.csv")
             return
 
-        self.stdout.write(f"Building embeddings for {len(texts)} texts…")
-        save_dataset_embeddings(texts)
+        self.stdout.write(f"Building embeddings for {len(texts)} texts...")
+        save_dataset_embeddings(texts, meta_records)
         self.stdout.write(self.style.SUCCESS("Embeddings saved to data/embeddings.npy"))
 
     def _train_classifier(self):

@@ -20,43 +20,49 @@ Score display:
 """
 
 import logging
+import json
 import numpy as np
 
 logger = logging.getLogger(__name__)
 
-# After centering, valid similarity range
-_SCORE_MIN = 0.05   # below = unrelated
-_SCORE_MAX = 0.75   # above = suspiciously high (near-duplicate)
+_SCORE_MIN = 0.05
+_SCORE_MAX = 0.75
 
-# ── Singleton cache ───────────────────────────────────────────────────────────
-_dataset_embs  = None   # shape (N, 768), mean-centered + L2-normalised
-_dataset_texts = None   # list[str] of original input_text strings
-_mean_emb      = None   # shape (768,) — dataset mean for centering queries
+_dataset_embs  = None
+_dataset_texts = None
+_mean_emb      = None
+_sim_meta      = None   # list[dict] with case_id, outcome, category, sections
 
 
 def _load_once():
-    global _dataset_embs, _dataset_texts, _mean_emb
+    global _dataset_embs, _dataset_texts, _mean_emb, _sim_meta
     if _dataset_embs is not None:
         return True
 
-    from .embeddings import load_dataset_embeddings
+    from .embeddings import load_dataset_embeddings, _data_dir
     embs, texts = load_dataset_embeddings()
     if embs is None or len(embs) == 0:
         logger.warning("Similarity: no dataset embeddings found — run build_ml")
         return False
 
     embs = embs.astype(np.float32)
-
-    # ── Mean centering ────────────────────────────────────────────────────────
-    # Compute dataset mean and subtract — removes shared "legal domain" component
-    _mean_emb = embs.mean(axis=0)                    # shape (768,)
-    centered  = embs - _mean_emb                     # shape (N, 768)
-
-    # L2-normalise centered vectors
+    _mean_emb = embs.mean(axis=0)
+    centered  = embs - _mean_emb
     norms = np.linalg.norm(centered, axis=1, keepdims=True)
     norms = np.where(norms < 1e-9, 1.0, norms)
     _dataset_embs  = (centered / norms).astype(np.float32)
     _dataset_texts = texts
+
+    # Load rich metadata if available
+    sim_meta_path = _data_dir() / "similarity_meta.json"
+    if sim_meta_path.exists():
+        try:
+            _sim_meta = json.loads(sim_meta_path.read_text(encoding="utf-8"))
+        except Exception as e:
+            logger.warning(f"Could not load similarity_meta.json: {e}")
+            _sim_meta = None
+    else:
+        _sim_meta = None
 
     logger.info(f"Similarity: loaded {len(texts)} mean-centered embeddings")
     return True
@@ -66,9 +72,16 @@ def find_similar(text: str, top_k: int = 5) -> list[dict]:
     """
     Find top_k semantically similar cases using mean-centered cosine similarity.
 
-    Returns list of dicts: [{"text": "...", "score": 73.2}, ...]
-    score is a percentage in [0, 100] mapped from the valid similarity band.
-    Returns [] on failure or if no results pass the threshold.
+    Returns list of dicts:
+      {
+        "text": "...",          # input_text snippet (300 chars)
+        "score": 73.2,          # similarity % [0-100]
+        "case_id": "2025 INSC 35",
+        "outcome": "Allowed",
+        "category": "Criminal",
+        "sections": "302 IPC, 34 IPC",
+      }
+    Falls back to text-only if similarity_meta.json not available.
     """
     if not _load_once():
         return []
@@ -80,42 +93,45 @@ def find_similar(text: str, top_k: int = 5) -> list[dict]:
 
     try:
         emb = emb.astype(np.float32)
-
-        # Center the query using the same dataset mean
         centered_q = emb - _mean_emb
-
         norm = np.linalg.norm(centered_q)
         if norm < 1e-9:
             return []
         q = (centered_q / norm).astype(np.float32)
 
-        # Vectorised cosine similarity on centered vectors
-        scores = _dataset_embs @ q   # shape (N,)
-
+        scores  = _dataset_embs @ q
         top_idx = np.argsort(scores)[::-1]
 
         results = []
         for idx in top_idx:
             score = float(scores[idx])
-
-            # Skip near-duplicates (same or nearly same document)
             if score >= 0.999:
                 continue
-
-            # Filter to meaningful range
             if score < _SCORE_MIN or score > _SCORE_MAX:
                 continue
 
-            # Map [_SCORE_MIN, _SCORE_MAX] → [0, 100] for display
             scaled = (score - _SCORE_MIN) / (_SCORE_MAX - _SCORE_MIN) * 100
             scaled = round(min(max(scaled, 0.0), 100.0), 1)
 
             snippet = _dataset_texts[idx]
-            results.append({
-                "text":  snippet[:300] + ("…" if len(snippet) > 300 else ""),
+            entry = {
+                "text":  snippet[:300] + ("..." if len(snippet) > 300 else ""),
                 "score": scaled,
-            })
+                "case_id":  "",
+                "outcome":  "",
+                "category": "",
+                "sections": "",
+            }
 
+            # Enrich with metadata if available
+            if _sim_meta and idx < len(_sim_meta):
+                m = _sim_meta[idx]
+                entry["case_id"]  = m.get("case_id", "")
+                entry["outcome"]  = m.get("outcome", "")
+                entry["category"] = m.get("category", "")
+                entry["sections"] = m.get("sections", "")
+
+            results.append(entry)
             if len(results) >= top_k:
                 break
 

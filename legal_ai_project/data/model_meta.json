@@ -1,0 +1,17 @@
+{
+  "cv_accuracy_mean": 0.9339,
+  "cv_accuracy_std": 0.0262,
+  "cv_scores": [
+    0.9747,
+    0.9241,
+    0.9241,
+    0.9494,
+    0.8974
+  ],
+  "train_samples": 394,
+  "class_counts": {
+    "0": 90,
+    "1": 304
+  },
+  "model_type": "VotingClassifier(CalibratedSVM+LR, isotonic)"
+}
