@@ -9,7 +9,7 @@ from django.contrib.auth.decorators import login_required
 
 from .extractor import extract_fields, extract_text_from_pdf
 from .correction import hybrid_correction, is_legal_document
-from .utils import save_to_dataset, outcome_label_display
+from .utils import save_to_dataset, outcome_label_display, outcome_display_from_text
 from .models import UploadedCase, ChatSession, ChatMessage
 
 
@@ -18,6 +18,115 @@ def upload_case(request):
         from django.shortcuts import redirect
         return redirect("dashboard")
     return render(request, "upload.html")
+
+
+def predict_case(request):
+    """
+    Case Outcome Predictor — ML-only page.
+    User describes a PENDING case via structured form (no PDF, no verdict).
+    Model predicts likely outcome from facts + sections + category.
+    """
+    if not request.user.is_authenticated or not request.user.is_approved:
+        from django.shortcuts import redirect
+        return redirect("dashboard")
+
+    if request.method != "POST":
+        return render(request, "predict.html")
+
+    # ── Collect form inputs ───────────────────────────────────────────────────
+    category    = request.POST.get("category", "").strip()
+    sections    = request.POST.get("sections", "").strip()
+    court       = request.POST.get("court", "").strip()
+    facts       = request.POST.get("facts", "").strip()
+    appellant_t = request.POST.get("appellant_type", "").strip()
+
+    if not facts or len(facts.split()) < 30:
+        return render(request, "predict.html", {
+            "error": "Please provide at least 30 words describing the case facts."
+        })
+
+    # ── Build input_text in the same format as training data ─────────────────
+    # Structure: facts + context metadata + sections
+    # No verdict sentences — model predicts from facts only
+    input_parts = [facts.strip()]
+    if court:
+        input_parts.append(f"The matter arises from the {court}.")
+    if appellant_t:
+        input_parts.append(f"The appellant is a {appellant_t}.")
+    if sections:
+        input_parts.append(f"Sections: {sections}.")
+
+    input_text = " ".join(input_parts)
+
+    # Strip any accidental verdict signals the user may have included
+    from .extractor import strip_verdict_signals
+    input_text = strip_verdict_signals(input_text)
+
+    # ── ML prediction ─────────────────────────────────────────────────────────
+    ml_label, ml_conf = None, None
+    try:
+        from .ml.classifier import predict
+        ml_label, ml_conf = predict(input_text)
+    except Exception:
+        pass
+
+    # ── Similarity search ─────────────────────────────────────────────────────
+    similar_cases = []
+    try:
+        from .ml.similarity import find_similar
+        similar_cases = find_similar(input_text, top_k=5)
+    except Exception:
+        pass
+
+    # ── Build outcome display ─────────────────────────────────────────────────
+    from .utils import outcome_label_display
+    if ml_label is not None:
+        conf_pct          = round(ml_conf * 100, 1)
+        confidence_display = f"{conf_pct}%"
+        outcome_display    = outcome_label_display(ml_label)
+    else:
+        conf_pct           = 0
+        confidence_display = "N/A"
+        outcome_display    = "Undetermined"
+
+    # ── Similar case outcome summary ──────────────────────────────────────────
+    # "X out of 5 similar cases were Allowed"
+    similar_allowed   = sum(1 for c in similar_cases if "allowed" in c.get("outcome","").lower()
+                            or "acquitted" in c.get("outcome","").lower()
+                            or "quashed" in c.get("outcome","").lower())
+    similar_dismissed = sum(1 for c in similar_cases if "dismissed" in c.get("outcome","").lower())
+
+    # ── Store context for chatbot ─────────────────────────────────────────────
+    request.session["case_context"] = {
+        "summary":       facts,
+        "input_text":    input_text,
+        "appellant":     appellant_t or "Appellant",
+        "category":      category,
+        "outcome":       outcome_display,
+        "sections":      sections,
+        "prediction":    ml_label,
+        "confidence":    ml_conf if ml_conf is not None else 0,
+        "similar_cases": similar_cases,
+    }
+    request.session.pop("chat_session_id", None)
+
+    return render(request, "predict.html", {
+        "predicted":        True,
+        "ml_label":         ml_label,
+        "ml_conf":          ml_conf,
+        "conf_pct":         conf_pct,
+        "confidence":       confidence_display,
+        "outcome_display":  outcome_display,
+        "similar_cases":    similar_cases,
+        "similar_allowed":  similar_allowed,
+        "similar_dismissed": similar_dismissed,
+        "category":         category,
+        "sections":         sections,
+        "court":            court,
+        "facts":            facts,
+        "appellant_type":   appellant_t,
+        "sections_list":    [s.strip() for s in sections.split(",") if s.strip()],
+    })
 
 
 def lincoln_lawyer(request):
@@ -114,19 +223,7 @@ def analyze_case(request):
     # ── Hybrid correction + AI summary (single Cohere call) ───────────────────
     result = hybrid_correction(result, raw_text)
 
-    # ── ML: prediction ────────────────────────────────────────────────────────
-    ml_label, ml_conf = None, None
-    try:
-        from .ml.classifier import predict
-        from .extractor import strip_verdict_signals
-        # Strip verdict signals at inference — model must predict from facts only
-        raw_input = result.get("input_text", "") or raw_text[:512]
-        clean_input = strip_verdict_signals(raw_input)
-        ml_label, ml_conf = predict(clean_input)
-    except Exception:
-        pass
-
-    # ── ML: similarity search ─────────────────────────────────────────────────
+    # ── Similarity search ─────────────────────────────────────────────────────
     similar_cases = []
     try:
         from .ml.similarity import find_similar
@@ -134,30 +231,14 @@ def analyze_case(request):
     except Exception:
         pass
 
-    # ── Confidence display ────────────────────────────────────────────────────
     extracted_outcome = result.get("outcome", "")
     extracted_label   = result.get("label")
 
-    if ml_conf is not None:
-        conf_pct = round(ml_conf * 100, 1)
-        confidence_display = f"{conf_pct}%"
-        label_source = "ml_model"
-    else:
-        import random
-        lbl = extracted_label
-        conf_pct = random.randint(78, 95) if lbl == 1 else (
-                   random.randint(72, 89) if lbl == 0 else 0)
-        confidence_display = f"{conf_pct}%" if conf_pct else "N/A"
-        label_source = "rule_based"
-
-    # ML predicts independently — use ML label when available
-    final_label = ml_label if ml_label is not None else extracted_label
-
-    result["ml_label"]          = ml_label
-    result["ml_confidence_pct"] = conf_pct
-    result["confidence"]        = confidence_display
-    result["label_source"]      = label_source
-    result["outcome_display"]   = outcome_label_display(final_label)
+    result["ml_label"]          = None
+    result["ml_confidence_pct"] = 0
+    result["confidence"]        = "N/A"
+    result["label_source"]      = "extractor"
+    result["outcome_display"]   = outcome_display_from_text(extracted_outcome)
     result["similar_cases"]     = similar_cases
 
     save_to_dataset(result)
@@ -190,26 +271,18 @@ def analyze_case(request):
         "category":      result.get("category", ""),
         "outcome":       result.get("outcome", ""),
         "sections":      result.get("sections", ""),
-        "prediction":    final_label,
-        "confidence":    ml_conf if ml_conf is not None else conf_pct / 100,
+        "prediction":    extracted_label,
+        "confidence":    0,
         "similar_cases": similar_cases,
     }
 
-    # Pre-split sections for template (avoids custom template filter)
+    # Pre-split sections for template
     sections_list = [s.strip() for s in result.get("sections", "").split(",") if s.strip()] if result.get("sections") else []
-
-    # Load model metadata for display
-    model_meta = {}
-    try:
-        from .ml.classifier import load_meta
-        model_meta = load_meta()
-    except Exception:
-        pass
 
     return render(request, "result.html", {
         "result": result,
         "sections_list": sections_list,
-        "model_meta": model_meta,
+        "model_meta": {},
         "chat_session_id": chat_session.pk if chat_session else None,
         "uploaded_case_id": uploaded_case_obj.pk if uploaded_case_obj else None,
     })

@@ -24,7 +24,9 @@
       <a class="nav-link {% block nav_dashboard %}{% endblock %}" href="{% url 'dashboard' %}"><i class="bi bi-grid"></i> Dashboard</a>
       {% if user.is_approved %}
         <a class="nav-link {% block nav_analyze %}{% endblock %}" href="{% url 'upload' %}"><i class="bi bi-upload"></i> Analyze</a>
-        <a class="nav-link {% block nav_chat %}{% endblock %}" href="{% url 'lincoln_lawyer' %}"><i class="bi bi-scales"></i> Lincoln Lawyer</a>
+        <a class="nav-link {% block nav_predict %}{% endblock %}" href="{% url 'predict' %}"><i class="bi bi-cpu"></i> Predict</a>
+        <a class="nav-link {% block nav_chat %}{% endblock %}" href="{% url 'lincoln_lawyer' %}"><i class="bi bi-bank"></i> Lincoln</a>
+        <a class="nav-link {% block nav_history %}{% endblock %}" href="{% url 'chat_history' %}"><i class="bi bi-clock-history"></i> History</a>
       {% endif %}
       {% if user.is_staff %}
         <a class="nav-link {% block nav_admin %}{% endblock %}" href="{% url 'admin_panel' %}"><i class="bi bi-people"></i> Users</a>

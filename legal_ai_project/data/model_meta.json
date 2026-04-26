@@ -1,17 +1,19 @@
 {
-  "cv_accuracy_mean": 0.9339,
-  "cv_accuracy_std": 0.0262,
+  "cv_accuracy_mean": 0.9774,
+  "cv_accuracy_std": 0.0041,
   "cv_scores": [
-    0.9747,
-    0.9241,
-    0.9241,
-    0.9494,
-    0.8974
+    0.9796,
+    0.9794,
+    0.9794,
+    0.9794,
+    0.9691
   ],
+  "cv_orig_mean": 0.9339,
   "train_samples": 394,
+  "train_samples_smote": 486,
   "class_counts": {
     "0": 90,
     "1": 304
   },
-  "model_type": "VotingClassifier(CalibratedSVM+LR, isotonic)"
+  "model_type": "VotingClassifier(CalibratedSVM+LR) + SMOTE"
 }

@@ -18,9 +18,11 @@
 <nav class="nav">
   <a class="nav-logo" href="/"><span class="dot"></span>Nyaya Sahayak</a>
   <div class="nav-links">
-    <a class="nav-link" href="/upload/"><i class="bi bi-upload"></i> Analyze</a>
-    <a class="nav-link" href="/chat/"><i class="bi bi-scales"></i> Lincoln Lawyer</a>
-    <a class="nav-link" href="/history/"><i class="bi bi-clock-history"></i> History</a>
+    <a class="nav-link" href="{% url 'dashboard' %}"><i class="bi bi-grid"></i> Dashboard</a>
+    <a class="nav-link" href="{% url 'upload' %}"><i class="bi bi-upload"></i> Analyze</a>
+    <a class="nav-link" href="{% url 'predict' %}"><i class="bi bi-cpu"></i> Predict</a>
+    <a class="nav-link" href="{% url 'lincoln_lawyer' %}"><i class="bi bi-scales"></i> Lincoln</a>
+    <a class="nav-link" href="{% url 'chat_history' %}"><i class="bi bi-clock-history"></i> History</a>
   </div>
   <div class="nav-right">
     <button id="share-btn" onclick="shareResult()" class="btn btn-ghost" style="font-size:11px;" title="Copy shareable summary (Ctrl+Shift+S)">
@@ -57,65 +59,46 @@
 <div class="dashboard">
   <div class="left-col">
 
-    <!-- VERDICT HERO -->
-    {% if result.ml_label == 1 or result.label == 1 %}
+    <!-- VERDICT HERO — based on extracted outcome from judgment text -->
+    {% with outcome_lower=result.outcome|lower %}
+    {% if "allowed" in outcome_lower and "partly" not in outcome_lower %}
     <div class="verdict-hero favorable">
       <div class="verdict-icon">✅</div>
       <div class="verdict-body">
-        <div class="verdict-label">ML Prediction</div>
+        <div class="verdict-label">Judgment Outcome</div>
         <div class="verdict-outcome">{{ result.outcome_display }}</div>
         <div class="verdict-sub">{{ result.category|default:"Unknown" }} &middot; {{ result.case_id|default:"" }}</div>
       </div>
-      <div class="conf-ring-wrap">
-        <div class="conf-ring">
-          <svg width="64" height="64" viewBox="0 0 64 64">
-            <circle class="conf-ring-bg" cx="32" cy="32" r="26"/>
-            <circle class="conf-ring-fill favorable" id="ring-fill" cx="32" cy="32" r="26"/>
-          </svg>
-          <div class="conf-ring-text">{{ result.confidence }}</div>
-        </div>
-        <div class="conf-ring-label">Confidence</div>
-      </div>
     </div>
-    {% elif result.ml_label == 0 or result.label == 0 %}
+    {% elif "dismissed" in outcome_lower %}
     <div class="verdict-hero unfavorable">
       <div class="verdict-icon">❌</div>
       <div class="verdict-body">
-        <div class="verdict-label">ML Prediction</div>
+        <div class="verdict-label">Judgment Outcome</div>
         <div class="verdict-outcome">{{ result.outcome_display }}</div>
         <div class="verdict-sub">{{ result.category|default:"Unknown" }} &middot; {{ result.case_id|default:"" }}</div>
       </div>
-      <div class="conf-ring-wrap">
-        <div class="conf-ring">
-          <svg width="64" height="64" viewBox="0 0 64 64">
-            <circle class="conf-ring-bg" cx="32" cy="32" r="26"/>
-            <circle class="conf-ring-fill unfavorable" id="ring-fill" cx="32" cy="32" r="26"/>
-          </svg>
-          <div class="conf-ring-text">{{ result.confidence }}</div>
-        </div>
-        <div class="conf-ring-label">Confidence</div>
+    </div>
+    {% elif "acquitted" in outcome_lower or "quashed" in outcome_lower %}
+    <div class="verdict-hero favorable">
+      <div class="verdict-icon">✅</div>
+      <div class="verdict-body">
+        <div class="verdict-label">Judgment Outcome</div>
+        <div class="verdict-outcome">{{ result.outcome_display }}</div>
+        <div class="verdict-sub">{{ result.category|default:"Unknown" }} &middot; {{ result.case_id|default:"" }}</div>
       </div>
     </div>
     {% else %}
     <div class="verdict-hero neutral">
       <div class="verdict-icon">⚖️</div>
       <div class="verdict-body">
-        <div class="verdict-label">Outcome</div>
+        <div class="verdict-label">Judgment Outcome</div>
         <div class="verdict-outcome">{{ result.outcome|default:"Undetermined" }}</div>
         <div class="verdict-sub">{{ result.category|default:"Unknown" }}</div>
       </div>
-      <div class="conf-ring-wrap">
-        <div class="conf-ring">
-          <svg width="64" height="64" viewBox="0 0 64 64">
-            <circle class="conf-ring-bg" cx="32" cy="32" r="26"/>
-            <circle class="conf-ring-fill neutral" id="ring-fill" cx="32" cy="32" r="26"/>
-          </svg>
-          <div class="conf-ring-text" style="font-size:11px;">N/A</div>
-        </div>
-        <div class="conf-ring-label">Confidence</div>
-      </div>
     </div>
     {% endif %}
+    {% endwith %}
 
     <!-- INSIGHT CARDS -->
     <div class="insight-row">

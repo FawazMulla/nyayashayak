@@ -1,0 +1,680 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Case Outcome Predictor — Nyaya Sahayak{% endblock %}
+{% block nav_predict %}active{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/result_enhanced.css' %}"/>
+<style>
+.predict-shell {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: radial-gradient(circle at top right, rgba(250,255,105,0.03), transparent 40%);
+}
+.predict-header {
+  padding: 12px 24px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--charcoal);
+  background: var(--near-black);
+}
+.predict-title { font-size:1.1rem;font-weight:900;color:var(--white);display:flex;align-items:center;gap:10px; }
+.predict-sub { font-size:11px;color:var(--silver);margin-top:2px; }
+
+/* Three-column layout — fills viewport */
+.predict-body {
+  display: grid;
+  grid-template-columns: 380px 1fr 320px;
+  flex: 1;
+  min-height: 0;
+  background: var(--black);
+}
+
+@media(max-width: 1200px) {
+  .predict-body {
+    grid-template-columns: 320px 1fr 300px;
+  }
+}
+
+/* On smaller desktops, keep Form and Results side-by-side, but stack Chatbot at the bottom */
+@media(max-width: 1000px) {
+  .predict-body {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr auto;
+    overflow-y: auto;
+  }
+  .predict-form-col { grid-column: 1; grid-row: 1; }
+  .predict-results-col { grid-column: 2; grid-row: 1; }
+  .predict-right { 
+    grid-column: 1 / span 2; 
+    grid-row: 2; 
+    height: 500px; 
+    border-top: 1px solid var(--charcoal);
+  }
+  .predict-col { border-bottom: 1px solid var(--charcoal); }
+}
+
+/* Mobile: Single column stack */
+@media(max-width: 700px) {
+  .predict-body {
+    display: flex;
+    flex-direction: column;
+  }
+  .predict-col, .predict-right {
+    height: auto;
+    min-height: 400px;
+    border-right: none;
+  }
+}
+
+/* Columns — scrollable */
+.predict-col {
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+  border-right: 1px solid var(--charcoal);
+}
+.predict-col:last-child { border-right: none; }
+.predict-col::-webkit-scrollbar { width: 4px; }
+.predict-col::-webkit-scrollbar-thumb { background: var(--deep); border-radius: 2px; }
+
+/* Right column specifically for chatbot */
+.predict-right {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background: var(--near-black);
+}
+
+/* Form panel */
+.form-panel { background:var(--near-black);border:1px solid var(--charcoal);border-radius:8px;overflow:hidden; }
+.form-panel-head { padding:12px 16px;border-bottom:1px solid var(--charcoal);display:flex;align-items:center;gap:8px; }
+.form-panel-head i { color:var(--neon);font-size:12px; }
+.form-panel-head-title { font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--white); }
+.form-panel-body { padding:20px; }
+
+.form-row { display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px; }
+@media(max-width:600px){ .form-row{grid-template-columns:1fr;} }
+.form-group { margin-bottom:14px; }
+.form-label { display:block;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--silver);margin-bottom:6px; }
+.form-label span { color:#585858;font-weight:400;text-transform:none;letter-spacing:0; }
+.form-input { width:100%;background:var(--black);border:1px solid var(--charcoal);border-radius:4px;color:var(--white);font-family:'Inter',sans-serif;font-size:13px;padding:9px 12px;outline:none;transition:border-color .15s; }
+.form-input:focus { border-color:var(--neon); }
+.form-input::placeholder { color:var(--silver); }
+select.form-input { appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23a0a0a0' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;cursor:pointer; }
+select.form-input option { background:#141414;color:#fff; }
+textarea.form-input { resize:vertical;min-height:140px;line-height:1.6; }
+.word-count { font-size:10px;color:var(--silver);margin-top:4px;text-align:right; }
+
+/* Example pills */
+.examples-label { font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--silver);margin-bottom:8px; }
+.examples-grid { display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px; }
+.example-pill { background:var(--black);border:1px solid var(--charcoal);border-radius:4px;color:var(--silver);font-size:10px;font-weight:600;padding:4px 10px;cursor:pointer;transition:border-color .15s,color .15s; }
+.example-pill:hover { border-color:var(--neon);color:var(--neon); }
+
+/* Result panel */
+.result-panel { display:flex;flex-direction:column;gap:10px; }
+.result-placeholder { background:var(--near-black);border:1px solid var(--charcoal);border-radius:8px;padding:40px 20px;text-align:center;color:var(--silver); }
+.result-placeholder i { font-size:2.5rem;color:var(--deep);display:block;margin-bottom:12px; }
+.result-placeholder p { font-size:13px; }
+
+/* Prediction card */
+.pred-card { background:var(--near-black);border:1px solid var(--charcoal);border-radius:8px;overflow:hidden;animation:fadeUp .4s ease both; }
+.pred-card-head { padding:10px 14px;border-bottom:1px solid var(--charcoal);display:flex;align-items:center;gap:6px; }
+.pred-card-head i { color:var(--neon);font-size:11px; }
+.pred-card-title { font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--white);flex:1; }
+.pred-card-body { padding:14px; }
+
+/* Precedent summary bar */
+.prec-bar { display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--black);border-radius:6px;margin-bottom:8px; }
+.prec-bar-label { font-size:11px;color:var(--silver);flex:1; }
+.prec-count { font-size:13px;font-weight:900; }
+.prec-count.green { color:#86efac; }
+.prec-count.red   { color:#fca5a5; }
+
+/* Similar case item */
+.sim-item { background:var(--black);border:1px solid var(--charcoal);border-radius:5px;padding:10px 12px;margin-bottom:6px;cursor:pointer;transition:border-color .15s; }
+.sim-item:hover { border-color:rgba(250,255,105,0.3); }
+.sim-item:last-child { margin-bottom:0; }
+.sim-item-top { display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap; }
+.sim-item-score { font-size:10px;font-weight:700;color:var(--neon);background:rgba(250,255,105,.08);border:1px solid var(--olive);padding:1px 7px;border-radius:9999px; }
+.sim-item-text { font-size:11px;color:var(--silver);line-height:1.5; }
+.sim-item-detail { display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--charcoal); }
+.sim-item-detail.open { display:block; }
+.sim-item-detail-row { display:flex;gap:6px;margin-bottom:4px;flex-wrap:wrap; }
+.sim-detail-label { font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--silver);min-width:60px; }
+.sim-detail-val { font-size:11px;color:var(--white);font-family:'Inconsolata',monospace; }
+.outcome-badge-allowed { font-size:9px;font-weight:700;color:#86efac;background:rgba(22,101,52,.15);border:1px solid rgba(22,101,52,.3);padding:1px 6px;border-radius:4px; }
+.outcome-badge-dismissed { font-size:9px;font-weight:700;color:#fca5a5;background:rgba(185,28,28,.12);border:1px solid rgba(185,28,28,.3);padding:1px 6px;border-radius:4px; }
+.outcome-badge-other { font-size:9px;font-weight:700;color:var(--silver);background:var(--near-black);border:1px solid var(--charcoal);padding:1px 6px;border-radius:4px; }
+
+/* Inline chatbot panel */
+.predict-chat-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+.predict-chat-head {
+  flex-shrink: 0;
+  padding: 10px 14px 8px;
+  background: linear-gradient(135deg, rgba(250,255,105,0.06) 0%, transparent 60%);
+  border-bottom: 1px solid rgba(250,255,105,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.predict-chat-head h3 { font-size:12px;font-weight:900;color:var(--white);display:flex;align-items:center;gap:5px; }
+.predict-chat-head p  { font-size:10px;color:var(--silver); }
+.predict-chat-quick {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  background: var(--near-black);
+  border-bottom: 1px solid var(--charcoal);
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 4px;
+}
+.predict-chat-messages {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  background: var(--black);
+}
+.predict-chat-messages::-webkit-scrollbar { width: 3px; }
+.predict-chat-messages::-webkit-scrollbar-thumb { background: var(--deep); border-radius: 2px; }
+.predict-chat-input-row {
+  flex-shrink: 0;
+  display: flex;
+  gap: 7px;
+  padding: 8px 10px;
+  background: var(--near-black);
+  border-top: 1px solid var(--charcoal);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="predict-shell">
+
+  <div class="predict-header fade-in">
+    <div class="predict-title"><i class="bi bi-cpu" style="color:var(--neon);margin-right:8px;"></i>Case Outcome Predictor</div>
+    <div class="predict-sub">Describe a <strong style="color:var(--white);">pending or hypothetical case</strong> — the ML model predicts the likely Supreme Court outcome from facts alone, with no judgment text needed.</div>
+  </div>
+
+  {% if error %}
+  <div class="alert fade-in"><i class="bi bi-exclamation-triangle-fill"></i>{{ error }}</div>
+  {% endif %}
+
+  <div class="predict-body">
+
+    <!-- LEFT: FORM -->
+    <div class="predict-col predict-form-col">
+      <div class="form-panel">
+        <div class="form-panel-head">
+          <i class="bi bi-pencil-square"></i>
+          <span class="form-panel-head-title">Describe the Case</span>
+          <span class="tag tag-yellow" style="margin-left:auto;"><i class="bi bi-cpu"></i> ML Only</span>
+        </div>
+        <div class="form-panel-body" style="padding:16px;">
+          <div class="examples-label">Examples:</div>
+          <div class="examples-grid" id="examples-grid" style="margin-bottom:12px;">
+            <button type="button" class="example-pill" onclick="loadExample(0)">Ajai vs UP</button>
+            <button type="button" class="example-pill" onclick="loadExample(1)">Arup Bhuyan</button>
+            <button type="button" class="example-pill" onclick="loadExample(2)">Aureliano</button>
+            <button type="button" class="example-pill" onclick="loadExample(3)">BOB</button>
+            <button type="button" class="example-pill" onclick="loadExample(4)">Bhagwan S.</button>
+            <button type="button" class="example-pill" onclick="loadExample(5)">Bhim Rao</button>
+            <button type="button" class="example-pill" onclick="loadExample(6)">Boby</button>
+            <button type="button" class="example-pill" onclick="loadExample(7)">Balwantbhai</button>
+            <button type="button" class="example-pill" onclick="loadExample(8)">Baini Prasad</button>
+            <button type="button" class="example-pill" onclick="loadExample(9)">Appaiya</button>
+          </div>
+
+          <form method="post" id="predict-form">
+            {% csrf_token %}
+            <div class="form-group">
+              <label class="form-label">Category</label>
+              <select name="category" class="form-input" required>
+                <option value="">— Select —</option>
+                <option value="Criminal" {% if category == "Criminal" %}selected{% endif %}>Criminal</option>
+                <option value="Criminal - Murder" {% if category == "Criminal - Murder" %}selected{% endif %}>Criminal — Murder</option>
+                <option value="Criminal - NDPS" {% if category == "Criminal - NDPS" %}selected{% endif %}>Criminal — NDPS</option>
+                <option value="Criminal - Sexual Offence" {% if category == "Criminal - Sexual Offence" %}selected{% endif %}>Criminal — Sexual Offence</option>
+                <option value="Criminal - PMLA" {% if category == "Criminal - PMLA" %}selected{% endif %}>Criminal — PMLA</option>
+                <option value="Criminal - Corruption" {% if category == "Criminal - Corruption" %}selected{% endif %}>Criminal — Corruption</option>
+                <option value="Civil" {% if category == "Civil" %}selected{% endif %}>Civil</option>
+                <option value="Civil - Property" {% if category == "Civil - Property" %}selected{% endif %}>Civil — Property</option>
+                <option value="Civil - Motor Accident" {% if category == "Civil - Motor Accident" %}selected{% endif %}>Civil — Motor Accident</option>
+                <option value="Civil - Insurance" {% if category == "Civil - Insurance" %}selected{% endif %}>Civil — Insurance</option>
+                <option value="Civil - Consumer" {% if category == "Civil - Consumer" %}selected{% endif %}>Civil — Consumer</option>
+                <option value="Civil - Arbitration" {% if category == "Civil - Arbitration" %}selected{% endif %}>Civil — Arbitration</option>
+                <option value="Civil - Tenancy" {% if category == "Civil - Tenancy" %}selected{% endif %}>Civil — Tenancy</option>
+                <option value="Tax" {% if category == "Tax" %}selected{% endif %}>Tax</option>
+                <option value="Service Law" {% if category == "Service Law" %}selected{% endif %}>Service Law</option>
+                <option value="Family Law" {% if category == "Family Law" %}selected{% endif %}>Family Law</option>
+                <option value="Labour / Industrial" {% if category == "Labour / Industrial" %}selected{% endif %}>Labour / Industrial</option>
+                <option value="Constitutional / Writ" {% if category == "Constitutional / Writ" %}selected{% endif %}>Constitutional / Writ</option>
+                <option value="Corporate / Securities" {% if category == "Corporate / Securities" %}selected{% endif %}>Corporate / Securities</option>
+                <option value="Environmental" {% if category == "Environmental" %}selected{% endif %}>Environmental</option>
+                <option value="SLP" {% if category == "SLP" %}selected{% endif %}>SLP</option>
+                <option value="Other" {% if category == "Other" %}selected{% endif %}>Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Appellant Type</label>
+              <select name="appellant_type" class="form-input">
+                <option value="">— Select —</option>
+                <option value="Individual" {% if appellant_type == "Individual" %}selected{% endif %}>Individual</option>
+                <option value="Company" {% if appellant_type == "Company" %}selected{% endif %}>Company</option>
+                <option value="State" {% if appellant_type == "State" %}selected{% endif %}>State</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Court Whose Order is Challenged</label>
+              <select name="court" class="form-input">
+                <option value="">— Select —</option>
+                <option value="High Court" {% if court == "High Court" %}selected{% endif %}>High Court</option>
+                <option value="Sessions Court" {% if court == "Sessions Court" %}selected{% endif %}>Sessions Court</option>
+                <option value="District Court" {% if court == "District Court" %}selected{% endif %}>District Court</option>
+                <option value="Tribunal" {% if court == "Tribunal" %}selected{% endif %}>Tribunal</option>
+                <option value="Consumer Forum" {% if court == "Consumer Forum" %}selected{% endif %}>Consumer Forum</option>
+                <option value="NCLAT" {% if court == "NCLAT" %}selected{% endif %}>NCLAT</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Legal Sections</label>
+              <input type="text" name="sections" class="form-input" placeholder="e.g. 302 IPC, 34 IPC" value="{{ sections|default:'' }}"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Case Facts <span>(required)</span></label>
+              <textarea name="facts" id="facts-input" class="form-input" style="min-height:180px;" required>{{ facts|default:'' }}</textarea>
+              <div class="word-count" id="word-count">0 words</div>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%;">
+              <i class="bi bi-cpu"></i> Predict Outcome
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- MIDDLE: RESULTS -->
+    <div class="predict-col predict-results-col">
+      {% if not predicted %}
+      <div class="result-placeholder" style="border:none;background:transparent;padding-top:60px;">
+        <div style="width:64px;height:64px;background:var(--near-black);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;border:1px solid var(--charcoal);">
+          <i class="bi bi-cpu" style="font-size:1.5rem;color:var(--deep);margin:0;"></i>
+        </div>
+        <h4 style="color:var(--white);font-size:14px;margin-bottom:8px;">Ready for Analysis</h4>
+        <p>Fill in the case details and click <strong>Predict Outcome</strong> to see the ML model's verdict and similar precedents.</p>
+      </div>
+      {% else %}
+      
+      <!-- Prediction Card -->
+      {% if ml_label == 1 %}
+      <div class="verdict-hero favorable" style="margin-bottom:16px;">
+        <div class="verdict-icon">✅</div>
+        <div class="verdict-body">
+          <div class="verdict-label">Prediction</div>
+          <div class="verdict-outcome">Allowed</div>
+          <div class="verdict-sub">{{ category }} · {{ confidence }} conf.</div>
+        </div>
+        <div class="conf-ring-wrap">
+          <div class="conf-ring" style="width:48px;height:48px;">
+            <svg width="48" height="48" viewBox="0 0 64 64"><circle class="conf-ring-bg" cx="32" cy="32" r="26"/><circle class="conf-ring-fill favorable" id="ring-fill" cx="32" cy="32" r="26"/></svg>
+            <div class="conf-ring-text" style="font-size:11px;">{{ confidence }}</div>
+          </div>
+        </div>
+      </div>
+      {% elif ml_label == 0 %}
+      <div class="verdict-hero unfavorable" style="margin-bottom:16px;">
+        <div class="verdict-icon">❌</div>
+        <div class="verdict-body">
+          <div class="verdict-label">Prediction</div>
+          <div class="verdict-outcome">Dismissed</div>
+          <div class="verdict-sub">{{ category }} · {{ confidence }} conf.</div>
+        </div>
+        <div class="conf-ring-wrap">
+          <div class="conf-ring" style="width:48px;height:48px;">
+            <svg width="48" height="48" viewBox="0 0 64 64"><circle class="conf-ring-bg" cx="32" cy="32" r="26"/><circle class="conf-ring-fill unfavorable" id="ring-fill" cx="32" cy="32" r="26"/></svg>
+            <div class="conf-ring-text" style="font-size:11px;">{{ confidence }}</div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Sections -->
+      {% if sections_list %}
+      <div class="pred-card">
+        <div class="pred-card-head"><i class="bi bi-tags"></i><span class="pred-card-title">Legal Sections</span></div>
+        <div class="pred-card-body">
+          <div class="sections-wrap">{% for sec in sections_list %}<span class="section-pill">{{ sec }}</span>{% endfor %}</div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Precedents -->
+      {% if similar_cases %}
+      <div class="pred-card">
+        <div class="pred-card-head"><i class="bi bi-diagram-2"></i><span class="pred-card-title">Similar Cases</span></div>
+        <div class="pred-card-body" style="padding:0;">
+          <div class="prec-bar" style="border-radius:0;border-left:none;border-right:none;background:rgba(250,255,105,0.02);">
+            <span class="prec-bar-label">Past outcomes:</span>
+            <span class="prec-count green">{{ similar_allowed }} Allowed</span>
+            <span class="prec-count red">{{ similar_dismissed }} Dismissed</span>
+          </div>
+          <div style="padding:12px;display:flex;flex-direction:column;gap:8px;">
+            {% for case in similar_cases %}
+            <div class="sim-item" onclick="toggleSimItem(this)">
+              <div class="sim-item-top">
+                <span class="sim-item-score">{{ case.score }}% match</span>
+                {% if case.outcome %}<span class="{% if 'allowed' in case.outcome|lower %}outcome-badge-allowed{% else %}outcome-badge-dismissed{% endif %}">{{ case.outcome }}</span>{% endif %}
+                <i class="bi bi-chevron-down" style="margin-left:auto;font-size:10px;"></i>
+              </div>
+              <div class="sim-item-text">{{ case.text|truncatechars:80 }}</div>
+              <div class="sim-item-detail"><div style="font-size:11px;color:var(--silver);line-height:1.5;">{{ case.text }}</div></div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+      {% endif %}
+    </div>
+
+    <!-- RIGHT: CHATBOT -->
+    <div class="predict-right">
+      <div class="predict-chat-panel">
+        <div class="predict-chat-head">
+          <div>
+            <h3><i class="bi bi-scales" style="color:var(--neon);"></i>Lincoln Lawyer</h3>
+            <p>{% if predicted %}Case loaded{% else %}Submit a case first{% endif %}</p>
+          </div>
+          <span class="chat-online-pulse">Online</span>
+        </div>
+        <div class="predict-chat-quick">
+          <button class="qbtn-enhanced" onclick="PredictChat.action('script')"><i class="bi bi-file-text"></i>Script</button>
+          <button class="qbtn-enhanced" onclick="PredictChat.action('appeal')"><i class="bi bi-arrow-up-circle"></i>Appeal</button>
+          <button class="qbtn-enhanced" onclick="PredictChat.action('arguments')"><i class="bi bi-chat-square-quote"></i>Arguments</button>
+          <button class="qbtn-enhanced" onclick="PredictChat.action('risk')"><i class="bi bi-exclamation-triangle"></i>Risk</button>
+          <button class="qbtn-enhanced" onclick="PredictChat.action('nextsteps')"><i class="bi bi-arrow-right-circle"></i>Next Steps</button>
+          <button class="qbtn-enhanced" onclick="PredictChat.action('eli5')"><i class="bi bi-emoji-smile"></i>ELI5</button>
+        </div>
+        <div class="predict-chat-messages" id="predict-chat-messages"></div>
+        <div class="predict-chat-input-row">
+          <input type="text" id="predictChatInput" class="chat-input" placeholder="Ask anything…" style="flex:1;"/>
+          <button class="btn-send" onclick="PredictChat.send()"><i class="bi bi-send-fill"></i></button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /predict-body -->
+</div><!-- /predict-shell -->
+
+<script>
+var CONF_PCT = '{{ conf_pct|default:0 }}';
+
+// Confidence ring animation
+document.addEventListener('DOMContentLoaded', function () {
+  var ring = document.getElementById('ring-fill');
+  if (ring) {
+    var pct = parseInt(CONF_PCT) || 0;
+    var offset = 163 - (pct / 100) * 163;
+    setTimeout(function () { ring.style.strokeDashoffset = offset; }, 400);
+  }
+});
+
+// Word counter
+var factsInput = document.getElementById('facts-input');
+var wordCount  = document.getElementById('word-count');
+function updateCount() {
+  var words = factsInput.value.trim().split(/\s+/).filter(Boolean).length;
+  wordCount.textContent = words + ' words';
+  wordCount.style.color = words < 30 ? '#fca5a5' : words < 100 ? '#fbbf24' : '#86efac';
+}
+if (factsInput) {
+  factsInput.addEventListener('input', updateCount);
+  updateCount();
+}
+
+// Real 2023 Supreme Court cases — facts only, outcome hidden
+var EXAMPLES = [
+  {
+    name: 'Ajai Alias Ajju vs State of UP',
+    category: 'Criminal',
+    appellant_type: 'Individual',
+    court: 'High Court',
+    sections: '302 IPC, 149 IPC, 307 IPC, 25 Arms Act',
+    facts: 'Criminal Appeals have been preferred by accused Ajai alias Ajju, Braj Pal and Ravi respectively. All the matters were clubbed together and tried by the Trial Court. All the relevant material and documents were proved and exhibited. The appellant challenges the conviction and sentence awarded by the Trial Court and upheld by the High Court. The prosecution relied on eyewitness testimony and forensic evidence to establish the guilt of the accused persons.'
+  },
+  {
+    name: 'Arup Bhuyan vs State of Assam',
+    category: 'Criminal',
+    appellant_type: 'Individual',
+    court: 'High Court',
+    sections: '153A IPC, 153B IPC, 144 CrPC',
+    facts: 'The present reference to the larger Bench is made against the judgment in the case of Arup Bhuyan vs Union of India. The commitment to freedom of expression demands that it cannot be suppressed unless the situations created by allowing the freedom are pressing and the community interest is endangered. We cannot simply balance the two interests as if they are of equal weight. The appellant contends that mere membership of a banned organisation without any overt act cannot be made the basis of conviction.'
+  },
+  {
+    name: 'Aureliano Fernandes vs State of Goa',
+    category: 'Civil',
+    appellant_type: 'Individual',
+    court: 'High Court',
+    sections: '21 Constitution',
+    facts: 'The High Court dismissed a writ petition against an order of the Executive Council of Goa University accepting the Report of the Standing Committee for Prevention of Sexual Harassment and imposing the penalty of dismissal from services. The appellant contends that any procedure prescribed to deprive the right to livelihood must be just, fair and reasonable. An employee in public employment must not be arbitrarily deprived of livelihood which is ensured in continued employment till it is terminated in accordance with just, fair and reasonable procedure.'
+  },
+  {
+    name: 'Bank of Baroda vs Baljit Singh',
+    category: 'Civil',
+    appellant_type: 'Company',
+    court: 'High Court',
+    sections: '34 CPC',
+    facts: 'This appeal arises out of a judgment passed by the High Court of Punjab and Haryana. The High Court set aside the judgment of the First Appellate Court and restored the judgment of the Trial Court. The question is whether the High Court was justified in setting aside the First Appellate Court judgment while answering the questions of law in favour of the respondent and against the Bank. The Bank contends that the High Court exceeded its jurisdiction under second appeal.'
+  },
+  {
+    name: 'Bhagwan Singh vs Dilip Kumar',
+    category: 'Criminal',
+    appellant_type: 'Individual',
+    court: 'High Court',
+    sections: '376D IPC, 384 IPC, 439 CrPC, 5 POCSO',
+    facts: 'The present appeals arise from an order of the High Court of Rajasthan allowing bail applications filed by the accused under Section 439 CrPC. The accused were granted bail on furnishing a personal bond for Rs. 1 lakh with two sureties. The appellant contends that while it is not required to have entire evidence establishing guilt beyond reasonable doubt, there ought to be prima facie satisfaction of the Court in support of the charge before granting bail in such serious offences.'
+  },
+  {
+    name: 'Bhim Rao Patil vs K Madan Mohan Rao',
+    category: 'Civil',
+    appellant_type: 'Individual',
+    court: 'High Court',
+    sections: '340 CrPC, 195 CrPC',
+    facts: 'The present appeal questions a judgment of the Telangana High Court dismissing an application which sought rejection of the respondent\'s election petition. The appellant contended that the election petition did not disclose any cause of action and was barred in law. The Election Commission had issued guidelines requiring declarations with respect to disclosure of pending criminal cases and those in which candidates had been convicted. The appellant argues the petition is not maintainable on the face of the pleadings.'
+  },
+  {
+    name: 'Boby vs State of Kerala',
+    category: 'Criminal',
+    appellant_type: 'Individual',
+    court: 'High Court',
+    sections: '302 IPC, 395 IPC, 201 IPC, 34 IPC',
+    facts: 'This appeal challenges the judgment of the High Court of Kerala dismissing the criminal appeals filed by the accused. The High Court found that the prosecution had proved the circumstances against the accused persons. However, the High Court found that the prosecution had failed to prove the case against one of the co-accused. The appellant contends that the circumstantial evidence is insufficient to establish guilt beyond reasonable doubt and the chain of circumstances is incomplete.'
+  },
+  {
+    name: 'Balwantbhai Bhandari vs Hiralal Contractor',
+    category: 'Civil',
+    appellant_type: 'Individual',
+    court: 'High Court',
+    sections: '52 TP Act, 2(b) Contempt Act',
+    facts: 'The rule of law means that no man is above the law and every man is subject to the ordinary law of the realm. Respect for law and its institutions is the only assurance that can hold a pluralist nation together. The pivotal issue is whether the wilful breach of an undertaking given by a counsel on behalf of his client to the court would amount to civil contempt. There exists a distinction between an undertaking given to a party to the lis and the undertaking given to a court.'
+  },
+  {
+    name: 'Baini Prasad vs Durga Devi',
+    category: 'Civil',
+    appellant_type: 'Individual',
+    court: 'High Court',
+    sections: '51 TP Act, 115 Evidence Act',
+    facts: 'The original appellant has since died and the legal heirs got themselves impleaded. The question is whether the original appellant can be treated as a transferee within the meaning of the Transfer of Property Act for the purpose of Section 51. The appellants seek restoration of the modification made by the First Appellate Court with respect to demolition and possession. The respondent contends that the appellants are not entitled to rely on Section 51 TP Act.'
+  },
+  {
+    name: 'Appaiya vs Andimuthu Thangapandi',
+    category: 'Civil',
+    appellant_type: 'Individual',
+    court: 'High Court',
+    sections: '100 CPC, 90 Evidence Act, 110 Evidence Act',
+    facts: 'The appeal is directed against the judgment of the Madurai Bench of the Madras High Court in a Second Appeal. The High Court set aside the judgment of the Sub-Court confirming the Trial Court decree. The question is whether Exhibit A would attract the presumption of genuineness under Section 90 of the Evidence Act as it is only a registration copy of a registered sale deed dated 1928 and its genuineness is disputed. The document requires corroboration by an independent witness to be admitted as genuine.'
+  }
+];
+function loadExample(idx) {
+  var ex = EXAMPLES[idx];
+  document.querySelector('select[name="category"]').value = ex.category;
+  document.querySelector('select[name="appellant_type"]').value = ex.appellant_type;
+  document.querySelector('select[name="court"]').value = ex.court;
+  document.querySelector('input[name="sections"]').value = ex.sections;
+  factsInput.value = ex.facts;
+  updateCount();
+  factsInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// Submit spinner
+document.getElementById('predict-form').addEventListener('submit', function () {
+  var btn = this.querySelector('button[type="submit"]');
+  if (btn) { btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Predicting…'; btn.disabled = true; }
+});
+
+{% if predicted %}
+// Init predict chatbot after DOM ready
+document.addEventListener('DOMContentLoaded', function () {
+  PredictChat.init('⚖️ I\'m Lincoln Lawyer. I\'ve read the predicted case facts.\n\nTry: "Generate a court script", "How to appeal?", or ask anything about this case.');
+});
+{% endif %}
+
+// Toggle similar case expand
+function toggleSimItem(el) {
+  var detail = el.querySelector('.sim-item-detail');
+  var icon   = el.querySelector('.bi-chevron-down, .bi-chevron-up');
+  if (!detail) return;
+  detail.classList.toggle('open');
+  if (icon) {
+    icon.className = detail.classList.contains('open')
+      ? 'bi bi-chevron-up'
+      : 'bi bi-chevron-down';
+    icon.style.cssText = 'font-size:9px;color:var(--silver);margin-left:auto;';
+  }
+}
+
+// Inline predict chatbot
+var PredictChat = (function () {
+  var CSRF = function () { return document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''; };
+  var URL  = '/chatbot/';
+
+  function getContainer() { return document.getElementById('predict-chat-messages'); }
+  function scrollBottom() { var c = getContainer(); if (c) c.scrollTop = c.scrollHeight; }
+
+  function renderMd(text) {
+    return text
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+      .replace(/`([^`]+)`/g,'<code style="color:#faff69;font-family:Inconsolata,monospace;font-size:11px;">$1</code>')
+      .replace(/^[\-•]\s+(.+)$/gm,'<li>$1</li>')
+      .replace(/\n\n/g,'</p><p style="margin:4px 0 0;">')
+      .replace(/\n/g,'<br>');
+  }
+
+  function appendMsg(text, role, animate) {
+    var c = getContainer(); if (!c) return;
+    var wrap = document.createElement('div');
+    wrap.className = 'msg-row' + (role === 'user' ? ' user' : '');
+    var bubble = document.createElement('div');
+    bubble.className = 'msg-bubble ' + role;
+    if (role === 'bot') {
+      var html = '<p style="margin:0;">' + renderMd(text) + '</p>';
+      if (animate) {
+        wrap.appendChild(bubble); c.appendChild(wrap); scrollBottom();
+        var chars = Array.from(html); var i = 0; var inTag = false; var buf = '';
+        (function tick() {
+          if (i >= chars.length) { bubble.innerHTML = html; scrollBottom(); return; }
+          if (chars[i] === '<') inTag = true;
+          if (inTag) { buf += chars[i]; if (chars[i] === '>') { inTag = false; bubble.innerHTML += buf; buf = ''; } i++; tick(); return; }
+          bubble.innerHTML += chars[i++]; scrollBottom(); setTimeout(tick, 10);
+        })();
+        return;
+      }
+      bubble.innerHTML = html;
+    } else {
+      bubble.textContent = text;
+    }
+    wrap.appendChild(bubble); c.appendChild(wrap); scrollBottom();
+  }
+
+  function showTyping() {
+    var c = getContainer(); if (!c) return;
+    var w = document.createElement('div'); w.className = 'msg-row'; w.id = 'predict-typing';
+    w.innerHTML = '<div class="msg-bubble bot" style="padding:8px 12px;"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div>';
+    c.appendChild(w); scrollBottom();
+  }
+  function removeTyping() { var t = document.getElementById('predict-typing'); if (t) t.remove(); }
+
+  // Special prompts for predict-mode actions
+  var ACTION_LABELS = {
+    script:    'Generate a court script for this case',
+    appeal:    'How should I file an appeal for this case?',
+    arguments: 'What are the strongest arguments?',
+    risk:      'What is the risk assessment?',
+    nextsteps: 'What are the next steps?',
+    eli5:      "Explain this case simply",
+  };
+
+  function post(query, action) {
+    showTyping();
+    fetch(URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': CSRF() },
+      body: 'query=' + encodeURIComponent(query) + '&action=' + encodeURIComponent(action) + '&mode=case',
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (d) { removeTyping(); appendMsg(d.response, 'bot', true); })
+    .catch(function () { removeTyping(); appendMsg('Network error — please try again.', 'bot', false); });
+  }
+
+  return {
+    action: function (key) {
+      var label = ACTION_LABELS[key] || key;
+      appendMsg(label, 'user', false);
+      // Map predict actions to chatbot actions
+      var chatAction = (key === 'script' || key === 'appeal') ? '' : key;
+      var chatQuery  = (key === 'script')
+        ? 'Generate a detailed court script and oral arguments for the appellant in this case.'
+        : (key === 'appeal')
+        ? 'Explain step by step how to file an appeal for this case — which court, what grounds, what documents, and what timeline.'
+        : '';
+      post(chatQuery, chatAction);
+    },
+    send: function () {
+      var el = document.getElementById('predictChatInput');
+      if (!el) return;
+      var q = el.value.trim(); if (!q) return;
+      appendMsg(q, 'user', false);
+      el.value = '';
+      post(q, '');
+    },
+    init: function (msg) {
+      if (msg) appendMsg(msg, 'bot', false);
+      var el = document.getElementById('predictChatInput');
+      if (el) {
+        el.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') { e.preventDefault(); PredictChat.send(); }
+        });
+      }
+    },
+  };
+})();
+</script>
+{% endblock %}
